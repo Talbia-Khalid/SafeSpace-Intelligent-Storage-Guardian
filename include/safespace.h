@@ -5,5 +5,6 @@
 #include <sys/statvfs.h>
 
 void check_storage();
+void analyze_directory();
 
 #endif

@@ -11,5 +11,9 @@ int main()
 
     check_storage();
 
+    analyze_directory();
+
+    printf("\nSafeSpace analysis completed!\n");
+
     return 0;
 }
