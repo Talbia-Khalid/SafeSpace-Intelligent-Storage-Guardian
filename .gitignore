@@ -1,0 +1,33 @@
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Compiled C files
+*.o
+*.out
+backend/safespace
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs and reports
+logs/*
+reports/*
+
+# Keep folders in Git
+!logs/.gitkeep
+!reports/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
+
