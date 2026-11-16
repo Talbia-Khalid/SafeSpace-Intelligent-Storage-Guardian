@@ -7,7 +7,9 @@ int main()
     printf("       Welcome to SafeSpace\n");
     printf("================================\n");
 
-    printf("SafeSpace backend is running successfully!\n");
+    printf("\nChecking system storage...\n");
+
+    check_storage();
 
     return 0;
 }
