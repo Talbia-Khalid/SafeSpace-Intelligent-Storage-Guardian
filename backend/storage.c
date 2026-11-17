@@ -48,4 +48,5 @@ void check_storage()
     }
 
     printf("================================\n");
+    save_storage_history(total, used, free_space, percentage);
 }

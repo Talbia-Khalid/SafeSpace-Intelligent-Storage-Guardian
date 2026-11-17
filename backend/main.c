@@ -13,6 +13,7 @@ int main()
     printf("\nChecking system storage...\n");
 
     check_storage();
+    show_storage_history();
 
     printf("\nEnter folder path to analyze: ");
 
