@@ -54,29 +54,11 @@ void scan_directory(char path[])
     closedir(dir);
 }
 
-void analyze_directory()
+void analyze_directory(char path[])
 {
-    char path[1024];
-
     total_size = 0;
     file_count = 0;
     folder_count = 0;
-
-    printf("\nEnter folder path to analyze: ");
-
-    if (fgets(path, sizeof(path), stdin) == NULL)
-    {
-        printf("Invalid input!\n");
-        return;
-    }
-
-    path[strcspn(path, "\n")] = '\0';
-
-    if (path[0] == '\0')
-    {
-        printf("Folder path cannot be empty!\n");
-        return;
-    }
 
     printf("\nScanning folder...\n");
 

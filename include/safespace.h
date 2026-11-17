@@ -5,6 +5,7 @@
 #include <sys/statvfs.h>
 
 void check_storage();
-void analyze_directory();
+void analyze_directory(char path[]);
+void detect_duplicates(char path[]);
 
 #endif
