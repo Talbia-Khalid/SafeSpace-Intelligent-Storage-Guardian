@@ -17,5 +17,9 @@ void save_storage_history(
 
 void show_storage_history();
 void monitor_directory(char path[]);
+void vault_menu();
+void quarantine_file(char path[]);
+void list_quarantined_files();
+void restore_file(int id);
 
 #endif

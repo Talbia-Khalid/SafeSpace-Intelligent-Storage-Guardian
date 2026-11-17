@@ -28,6 +28,7 @@ int main()
     analyze_directory(path);
 
     detect_duplicates(path);
+    vault_menu();
 
     char choice;
 
