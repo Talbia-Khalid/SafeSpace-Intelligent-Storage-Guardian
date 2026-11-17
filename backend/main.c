@@ -29,6 +29,16 @@ int main()
 
     detect_duplicates(path);
 
+    char choice;
+
+printf("\nDo you want to start file activity monitoring? (y/n): ");
+scanf(" %c", &choice);
+
+if (choice == 'y' || choice == 'Y')
+{
+    monitor_directory(path);
+}
+
     printf("\nSafeSpace analysis completed!\n");
 
     return 0;

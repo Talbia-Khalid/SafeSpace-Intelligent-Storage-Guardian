@@ -16,5 +16,6 @@ void save_storage_history(
 );
 
 void show_storage_history();
+void monitor_directory(char path[]);
 
 #endif
