@@ -29,6 +29,7 @@ int main()
 
     detect_duplicates(path);
     cleanup_recommendations(path);
+    emergency_mode(path);
     vault_menu();
 
     char choice;

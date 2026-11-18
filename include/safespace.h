@@ -24,4 +24,6 @@ void restore_file(int id);
 
 void cleanup_recommendations(char path[]);
 
+void emergency_mode(char path[]);
+
 #endif
