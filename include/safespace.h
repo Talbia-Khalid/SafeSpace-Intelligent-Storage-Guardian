@@ -22,4 +22,6 @@ void quarantine_file(char path[]);
 void list_quarantined_files();
 void restore_file(int id);
 
+void cleanup_recommendations(char path[]);
+
 #endif
