@@ -26,4 +26,6 @@ void cleanup_recommendations(char path[]);
 
 void emergency_mode(char path[]);
 
+void storage_health_score();
+
 #endif
