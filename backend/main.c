@@ -31,6 +31,7 @@ int main()
     cleanup_recommendations(path);
     emergency_mode(path);
     storage_health_score();
+    generate_storage_report(path);
     vault_menu();
 
     char choice;

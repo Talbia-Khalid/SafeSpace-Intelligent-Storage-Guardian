@@ -28,4 +28,6 @@ void emergency_mode(char path[]);
 
 void storage_health_score();
 
+void generate_storage_report(char path[]);
+
 #endif
