@@ -1,5 +1,5 @@
-
 import customtkinter as ctk
+import shutil
 
 # ================= SETTINGS =================
 
@@ -54,10 +54,35 @@ def clear_content():
     for widget in content.winfo_children():
         widget.destroy()
 
+
 def show_dashboard():
 
     clear_content()
 
+    # Get system storage information
+    disk = shutil.disk_usage("/")
+
+    total_gb = disk.total / (1024 ** 3)
+    used_gb = disk.used / (1024 ** 3)
+    free_gb = disk.free / (1024 ** 3)
+
+    usage_percentage = (disk.used / disk.total) * 100
+
+    # Calculate storage health score
+    if usage_percentage < 70:
+        health_score = 100
+        health_status = "GOOD"
+    elif usage_percentage < 85:
+        health_score = 80
+        health_status = "MODERATE"
+    elif usage_percentage < 95:
+        health_score = 60
+        health_status = "HIGH STORAGE USAGE"
+    else:
+        health_score = 30
+        health_status = "CRITICAL"
+
+    # Dashboard heading
     heading = ctk.CTkLabel(
         content,
         text="Dashboard",
@@ -72,15 +97,16 @@ def show_dashboard():
     )
     welcome.pack(anchor="w", padx=30, pady=(0, 25))
 
+    # Storage cards
     cards_frame = ctk.CTkFrame(content, fg_color="transparent")
     cards_frame.pack(fill="x", padx=25)
 
     cards_frame.grid_columnconfigure((0, 1, 2), weight=1)
 
     card_names = [
-        ("Total Storage", "-- GB"),
-        ("Used Storage", "-- GB"),
-        ("Available Storage", "-- GB")
+        ("Total Storage", f"{total_gb:.2f} GB"),
+        ("Used Storage", f"{used_gb:.2f} GB"),
+        ("Available Storage", f"{free_gb:.2f} GB")
     ]
 
     for index, (name, value) in enumerate(card_names):
@@ -101,6 +127,7 @@ def show_dashboard():
             font=("Arial", 26, "bold")
         ).pack()
 
+    # Storage health section
     health = ctk.CTkFrame(content)
     health.pack(fill="x", padx=33, pady=30)
 
@@ -112,15 +139,32 @@ def show_dashboard():
 
     ctk.CTkLabel(
         health,
-        text="Health Score: -- / 100",
+        text=f"Health Score: {health_score} / 100",
         font=("Arial", 18)
     ).pack(anchor="w", padx=20, pady=5)
 
     ctk.CTkLabel(
         health,
-        text="Status: Waiting for storage analysis",
+        text=f"Status: {health_status}",
         font=("Arial", 14)
-    ).pack(anchor="w", padx=20, pady=(5, 20))
+    ).pack(anchor="w", padx=20, pady=5)
+
+    # Storage usage percentage
+    ctk.CTkLabel(
+        health,
+        text=f"Storage Used: {usage_percentage:.2f}%",
+        font=("Arial", 14)
+    ).pack(anchor="w", padx=20, pady=(10, 5))
+
+    progress = ctk.CTkProgressBar(
+        health,
+        width=500
+    )
+
+    progress.pack(anchor="w", padx=20, pady=(5, 20))
+
+    progress.set(usage_percentage / 100)
+
 
 def show_page(page_name):
 
