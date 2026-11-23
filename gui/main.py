@@ -1,269 +1,874 @@
-import customtkinter as ctk
-import shutil
 
-# ================= SETTINGS =================
+import customtkinter as ctk
+import tkinter as tk
+import shutil
+from datetime import datetime
+
+# ==========================================================
+# SAFESPACE - ROUNDED CYBERSECURITY INTERFACE
+# ==========================================================
 
 ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("blue")
 
-app = ctk.CTk()
-app.title("SafeSpace - Intelligent Storage Guardian")
-app.geometry("1200x750")
-app.minsize(1000, 650)
+# ---------------- COLORS ----------------
 
-app.grid_columnconfigure(1, weight=1)
-app.grid_rowconfigure(0, weight=1)
+BG = "#0B1018"
+SIDEBAR = "#101722"
+CARD = "#171F2D"
+CARD_ALT = "#1C2635"
+BORDER = "#283549"
 
-# ================= SIDEBAR =================
+BLUE = "#5B91FF"
+CYAN = "#42D5E8"
+PURPLE = "#A58BFF"
+GREEN = "#3DDBA0"
+ORANGE = "#FFB45E"
+RED = "#FF6174"
 
-sidebar = ctk.CTkFrame(app, width=220, corner_radius=0)
-sidebar.grid(row=0, column=0, sticky="ns")
-sidebar.grid_propagate(False)
+TEXT = "#EDF3FA"
+MUTED = "#91A0B5"
 
-logo = ctk.CTkLabel(
-    sidebar,
-    text="SafeSpace",
-    font=("Arial", 28, "bold")
-)
-logo.pack(pady=(30, 5))
+# ---------------- TYPOGRAPHY ----------------
 
-subtitle = ctk.CTkLabel(
-    sidebar,
-    text="Intelligent Storage Guardian",
-    font=("Arial", 12)
-)
-subtitle.pack(pady=(0, 30))
+FONT = "Inter"
+MONO = "IBM Plex Mono"
 
-nav_title = ctk.CTkLabel(
-    sidebar,
-    text="NAVIGATION",
-    font=("Arial", 13, "bold")
-)
-nav_title.pack(pady=10)
+FONT_TITLE = (FONT, 23, "bold")
+FONT_SECTION = (FONT, 15, "bold")
+FONT_BODY = (FONT, 12)
+FONT_SMALL = (FONT, 10)
+FONT_STAT = (FONT, 29, "bold")
+FONT_TECH = (MONO, 10)
 
-# ================= MAIN CONTENT =================
+class SafeSpaceApp(ctk.CTk):
 
-content = ctk.CTkFrame(app, corner_radius=0)
-content.grid(row=0, column=1, sticky="nsew", padx=15, pady=15)
+    def __init__(self):
+        super().__init__()
 
-content.grid_columnconfigure(0, weight=1)
+        self.title("SafeSpace | Storage Intelligence")
 
-# ================= PAGE FUNCTIONS =================
+        screen_w = self.winfo_screenwidth()
+        screen_h = self.winfo_screenheight()
 
-def clear_content():
-    for widget in content.winfo_children():
-        widget.destroy()
+        window_w = min(1200, screen_w - 100)
+        window_h = min(800, screen_h - 100)
 
+        self.geometry(f"{window_w}x{window_h}+70+35")
+        self.minsize(850, 600)
 
-def show_dashboard():
+        self.configure(fg_color=BG)
 
-    clear_content()
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
 
-    # Get system storage information
-    disk = shutil.disk_usage("/")
+        self.pages = [
+            ("Dashboard", BLUE),
+            ("Storage Analyzer", BLUE),
+            ("Folder Analyzer", CYAN),
+            ("Duplicate Detector", PURPLE),
+            ("Activity Monitor", GREEN),
+            ("Emergency Mode", RED),
+            ("Recovery Vault", PURPLE),
+            ("Cleanup Recommendations", ORANGE),
+            ("Storage Reports", CYAN),
+            ("Storage History", BLUE),
+        ]
 
-    total_gb = disk.total / (1024 ** 3)
-    used_gb = disk.used / (1024 ** 3)
-    free_gb = disk.free / (1024 ** 3)
+        self.nav_buttons = {}
 
-    usage_percentage = (disk.used / disk.total) * 100
+        self.create_sidebar()
+        self.create_workspace()
+        self.open_page("Dashboard")
 
-    # Calculate storage health score
-    if usage_percentage < 70:
-        health_score = 100
-        health_status = "GOOD"
-    elif usage_percentage < 85:
-        health_score = 80
-        health_status = "MODERATE"
-    elif usage_percentage < 95:
-        health_score = 60
-        health_status = "HIGH STORAGE USAGE"
-    else:
-        health_score = 30
-        health_status = "CRITICAL"
+    # ==========================================================
+    # SIDEBAR
+    # ==========================================================
 
-    # Dashboard heading
-    heading = ctk.CTkLabel(
-        content,
-        text="Dashboard",
-        font=("Arial", 28, "bold")
-    )
-    heading.pack(anchor="w", padx=30, pady=(30, 5))
+    def create_sidebar(self):
 
-    welcome = ctk.CTkLabel(
-        content,
-        text="Monitor and manage your storage from one place.",
-        font=("Arial", 14)
-    )
-    welcome.pack(anchor="w", padx=30, pady=(0, 25))
+        self.sidebar = ctk.CTkFrame(
+            self,
+            width=205,
+            fg_color=SIDEBAR,
+            corner_radius=0
+        )
 
-    # Storage cards
-    cards_frame = ctk.CTkFrame(content, fg_color="transparent")
-    cards_frame.pack(fill="x", padx=25)
+        self.sidebar.grid(row=0, column=0, sticky="nsew")
+        self.sidebar.grid_propagate(False)
 
-    cards_frame.grid_columnconfigure((0, 1, 2), weight=1)
+        # Logo
+        logo_frame = ctk.CTkFrame(
+            self.sidebar,
+            fg_color="transparent"
+        )
+        logo_frame.pack(fill="x", padx=17, pady=(25, 4))
 
-    card_names = [
-        ("Total Storage", f"{total_gb:.2f} GB"),
-        ("Used Storage", f"{used_gb:.2f} GB"),
-        ("Available Storage", f"{free_gb:.2f} GB")
-    ]
+        ctk.CTkLabel(
+            logo_frame,
+            text="⬡",
+            font=(FONT, 30, "bold"),
+            text_color=CYAN
+        ).pack(side="left")
 
-    for index, (name, value) in enumerate(card_names):
+        ctk.CTkLabel(
+            logo_frame,
+            text="SafeSpace",
+            font=(FONT, 20, "bold"),
+            text_color=TEXT
+        ).pack(side="left", padx=7)
 
-        card = ctk.CTkFrame(cards_frame, height=130)
-        card.grid(row=0, column=index, padx=8, sticky="ew")
-        card.grid_propagate(False)
+        ctk.CTkLabel(
+            self.sidebar,
+            text="INTELLIGENT STORAGE GUARDIAN",
+            font=(MONO, 8),
+            text_color=MUTED
+        ).pack(anchor="w", padx=22, pady=(0, 25))
+
+        self.add_section("WORKSPACE")
+        self.add_nav("Dashboard", "◈", BLUE)
+
+        self.add_section("STORAGE INTELLIGENCE")
+        self.add_nav("Storage Analyzer", "▤", BLUE)
+        self.add_nav("Folder Analyzer", "▣", CYAN)
+        self.add_nav("Duplicate Detector", "◉", PURPLE)
+
+        self.add_section("MONITORING")
+        self.add_nav("Activity Monitor", "⌁", GREEN)
+        self.add_nav("Emergency Mode", "⚠", RED)
+
+        self.add_section("FILE PROTECTION")
+        self.add_nav("Recovery Vault", "⬡", PURPLE)
+        self.add_nav("Cleanup Recommendations", "✦", ORANGE)
+
+        self.add_section("REPORTING")
+        self.add_nav("Storage Reports", "▧", CYAN)
+        self.add_nav("Storage History", "↗", BLUE)
+
+        # Bottom system status
+        status_card = ctk.CTkFrame(
+            self.sidebar,
+            fg_color="#172332",
+            corner_radius=16,
+            border_width=1,
+            border_color="#26394A"
+        )
+        status_card.pack(side="bottom", fill="x", padx=12, pady=14)
+
+        ctk.CTkLabel(
+            status_card,
+            text="●  SYSTEM ONLINE",
+            font=(FONT, 11, "bold"),
+            text_color=GREEN
+        ).pack(anchor="w", padx=12, pady=(11, 3))
+
+        ctk.CTkLabel(
+            status_card,
+            text="Storage monitoring ready",
+            font=(FONT, 10),
+            text_color=MUTED
+        ).pack(anchor="w", padx=12, pady=(0, 11))
+
+    def add_section(self, title):
+
+        ctk.CTkLabel(
+            self.sidebar,
+            text=title,
+            font=(MONO, 9, "bold"),
+            text_color="#66768B"
+        ).pack(anchor="w", padx=21, pady=(10, 5))
+
+    def add_nav(self, name, icon, color):
+
+        button = ctk.CTkButton(
+            self.sidebar,
+            text=f"{icon}   {name}",
+            height=37,
+            corner_radius=10,
+            fg_color="transparent",
+            hover_color="#202C3D",
+            text_color="#A8B5C7",
+            font=(FONT, 11),
+            anchor="w",
+            command=lambda: self.open_page(name)
+        )
+
+        button.pack(fill="x", padx=9, pady=2)
+
+        self.nav_buttons[name] = {
+            "button": button,
+            "color": color
+        }
+
+    # ==========================================================
+    # WORKSPACE
+    # ==========================================================
+
+    def create_workspace(self):
+
+        self.workspace = ctk.CTkFrame(
+            self,
+            fg_color=BG,
+            corner_radius=0
+        )
+
+        self.workspace.grid(row=0, column=1, sticky="nsew")
+        self.workspace.grid_columnconfigure(0, weight=1)
+        self.workspace.grid_rowconfigure(1, weight=1)
+
+        # Top bar
+        self.topbar = ctk.CTkFrame(
+            self.workspace,
+            fg_color=BG,
+            height=62,
+            corner_radius=0
+        )
+
+        self.topbar.grid(
+            row=0,
+            column=0,
+            sticky="ew",
+            padx=18,
+            pady=(12, 0)
+        )
+        self.topbar.grid_columnconfigure(0, weight=1)
+
+        self.page_heading = ctk.CTkLabel(
+            self.topbar,
+            text="DASHBOARD",
+            font=FONT_TITLE,
+            text_color=TEXT
+        )
+        self.page_heading.grid(row=0, column=0, sticky="w")
+
+        ctk.CTkLabel(
+            self.topbar,
+            text="● SYSTEM ONLINE",
+            text_color=GREEN,
+            font=FONT_TECH
+        ).grid(row=0, column=1, padx=10)
+
+        self.time_label = ctk.CTkLabel(
+            self.topbar,
+            text=datetime.now().strftime("%d %b %Y"),
+            text_color=MUTED,
+            font=FONT_TECH
+        )
+        self.time_label.grid(row=0, column=2, padx=5)
+
+        # Scrollable workspace
+        self.content = ctk.CTkScrollableFrame(
+            self.workspace,
+            fg_color=BG,
+            corner_radius=0,
+            scrollbar_button_color="#34445B",
+            scrollbar_button_hover_color=BLUE
+        )
+
+        self.content.grid(
+            row=1,
+            column=0,
+            sticky="nsew",
+            padx=13,
+            pady=(5, 12)
+        )
+
+    # ==========================================================
+    # NAVIGATION
+    # ==========================================================
+
+    def open_page(self, name):
+
+        self.page_heading.configure(text=name.upper())
+
+        for page, data in self.nav_buttons.items():
+
+            if page == name:
+                data["button"].configure(
+                    fg_color="#1C2A3D",
+                    text_color=data["color"]
+                )
+            else:
+                data["button"].configure(
+                    fg_color="transparent",
+                    text_color="#A8B5C7"
+                )
+
+        if name == "Dashboard":
+            self.show_dashboard()
+        else:
+            self.show_tool_page(name)
+
+    def clear_content(self):
+
+        for widget in self.content.winfo_children():
+            widget.destroy()
+
+    # ==========================================================
+    # DASHBOARD
+    # ==========================================================
+
+    def show_dashboard(self):
+
+        self.clear_content()
+
+        disk = shutil.disk_usage("/")
+
+        total = disk.total / (1024 ** 3)
+        used = disk.used / (1024 ** 3)
+        free = disk.free / (1024 ** 3)
+
+        percentage = (disk.used / disk.total) * 100
+
+        if percentage < 70:
+            health = 100
+            health_status = "OPTIMAL"
+            health_color = GREEN
+        elif percentage < 85:
+            health = 80
+            health_status = "STABLE"
+            health_color = CYAN
+        elif percentage < 95:
+            health = 60
+            health_status = "WARNING"
+            health_color = ORANGE
+        else:
+            health = 30
+            health_status = "CRITICAL"
+            health_color = RED
+
+        # Intro
+        ctk.CTkLabel(
+            self.content,
+            text="STORAGE INTELLIGENCE",
+            font=FONT_TECH,
+            text_color=CYAN
+        ).pack(anchor="w", pady=(8, 4))
+
+        ctk.CTkLabel(
+            self.content,
+            text="Your files. Your control.",
+            font=(FONT, 25, "bold"),
+            text_color=TEXT
+        ).pack(anchor="w")
+
+        ctk.CTkLabel(
+            self.content,
+            text="Monitor storage health, analyze files and manage your storage environment.",
+            font=FONT_BODY,
+            text_color=MUTED
+        ).pack(anchor="w", pady=(4, 18))
+
+        # ---------------- STAT MODULES ----------------
+
+        stats = ctk.CTkFrame(
+            self.content,
+            fg_color="transparent"
+        )
+        stats.pack(fill="x", pady=(0, 12))
+
+        for i in range(3):
+            stats.grid_columnconfigure(i, weight=1, uniform="stats")
+
+        self.create_stat(
+            stats, 0,
+            "STORAGE USED",
+            f"{percentage:.1f}%",
+            f"{used:.2f} GB occupied",
+            BLUE,
+            "#18263B"
+        )
+
+        self.create_stat(
+            stats, 1,
+            "STORAGE HEALTH",
+            f"{health}/100",
+            health_status,
+            health_color,
+            "#172D2A"
+        )
+
+        self.create_stat(
+            stats, 2,
+            "FREE CAPACITY",
+            f"{free:.2f} GB",
+            f"Out of {total:.1f} GB total",
+            CYAN,
+            "#172A35"
+        )
+
+        # ---------------- MAIN MODULES ----------------
+
+        main_row = ctk.CTkFrame(
+            self.content,
+            fg_color="transparent"
+        )
+        main_row.pack(fill="x", pady=4)
+
+        main_row.grid_columnconfigure(0, weight=1, uniform="main")
+        main_row.grid_columnconfigure(1, weight=1, uniform="main")
+
+        # Storage visualization
+        storage_card = self.create_card(main_row)
+        storage_card.grid(
+            row=0,
+            column=0,
+            sticky="nsew",
+            padx=(0, 6)
+        )
+
+        ctk.CTkLabel(
+            storage_card,
+            text="Storage Overview",
+            font=FONT_SECTION,
+            text_color=TEXT
+        ).pack(anchor="w", padx=17, pady=(16, 3))
+
+        ctk.CTkLabel(
+            storage_card,
+            text="SYSTEM DISK",
+            font=FONT_TECH,
+            text_color=MUTED
+        ).pack(anchor="w", padx=17)
+
+        ring = tk.Canvas(
+            storage_card,
+            width=190,
+            height=190,
+            bg=CARD,
+            highlightthickness=0
+        )
+        ring.pack(pady=7)
+
+        ring.create_oval(
+            22, 22, 168, 168,
+            outline="#29374B",
+            width=18
+        )
+
+        ring.create_arc(
+            22, 22, 168, 168,
+            start=90,
+            extent=-percentage * 3.6,
+            style="arc",
+            outline=BLUE,
+            width=18
+        )
+
+        ring.create_text(
+            95, 86,
+            text=f"{percentage:.1f}%",
+            fill=TEXT,
+            font=(FONT, 23, "bold")
+        )
+
+        ring.create_text(
+            95, 111,
+            text="USED",
+            fill=MUTED,
+            font=(MONO, 10)
+        )
+
+        # Storage legend
+        legend = ctk.CTkFrame(
+            storage_card,
+            fg_color="transparent"
+        )
+        legend.pack(fill="x", padx=17, pady=(4, 2))
+
+        ctk.CTkLabel(
+            legend,
+            text="● USED",
+            text_color=BLUE,
+            font=FONT_TECH
+        ).pack(side="left")
+
+        ctk.CTkLabel(
+            legend,
+            text=f"{used:.2f} GB",
+            text_color=TEXT,
+            font=FONT_TECH
+        ).pack(side="right")
+
+        progress = ctk.CTkProgressBar(
+            storage_card,
+            height=9,
+            corner_radius=10,
+            progress_color=BLUE,
+            fg_color="#29374B"
+        )
+        progress.pack(fill="x", padx=17, pady=7)
+        progress.set(percentage / 100)
+
+        legend2 = ctk.CTkFrame(
+            storage_card,
+            fg_color="transparent"
+        )
+        legend2.pack(fill="x", padx=17, pady=(2, 14))
+
+        ctk.CTkLabel(
+            legend2,
+            text="● FREE",
+            text_color=CYAN,
+            font=FONT_TECH
+        ).pack(side="left")
+
+        ctk.CTkLabel(
+            legend2,
+            text=f"{free:.2f} GB",
+            text_color=TEXT,
+            font=FONT_TECH
+        ).pack(side="right")
+
+        # Health module
+        health_card = self.create_card(main_row)
+        health_card.grid(
+            row=0,
+            column=1,
+            sticky="nsew",
+            padx=(6, 0)
+        )
+
+        ctk.CTkLabel(
+            health_card,
+            text="System Health",
+            font=FONT_SECTION,
+            text_color=TEXT
+        ).pack(anchor="w", padx=17, pady=(16, 3))
+
+        ctk.CTkLabel(
+            health_card,
+            text="CAPACITY CONDITION",
+            font=FONT_TECH,
+            text_color=MUTED
+        ).pack(anchor="w", padx=17)
+
+        health_visual = ctk.CTkFrame(
+            health_card,
+            fg_color="#172B29",
+            corner_radius=22,
+            width=150,
+            height=150
+        )
+        health_visual.pack(pady=27)
+        health_visual.pack_propagate(False)
+
+        ctk.CTkLabel(
+            health_visual,
+            text=str(health),
+            font=(FONT, 43, "bold"),
+            text_color=health_color
+        ).pack(pady=(29, 0))
+
+        ctk.CTkLabel(
+            health_visual,
+            text="OUT OF 100",
+            font=FONT_TECH,
+            text_color=MUTED
+        ).pack(pady=(0, 3))
+
+        ctk.CTkLabel(
+            health_card,
+            text=health_status,
+            font=(FONT, 12, "bold"),
+            text_color=health_color
+        ).pack(pady=(0, 5))
+
+        ctk.CTkLabel(
+            health_card,
+            text="Based on system storage capacity",
+            font=FONT_SMALL,
+            text_color=MUTED
+        ).pack(pady=(0, 18))
+
+        # ---------------- LOWER MODULES ----------------
+
+        lower_row = ctk.CTkFrame(
+            self.content,
+            fg_color="transparent"
+        )
+        lower_row.pack(fill="x", pady=(12, 4))
+
+        lower_row.grid_columnconfigure(0, weight=1, uniform="lower")
+        lower_row.grid_columnconfigure(1, weight=1, uniform="lower")
+
+        # Activity module
+        activity_card = self.create_card(lower_row)
+        activity_card.grid(
+            row=0,
+            column=0,
+            sticky="nsew",
+            padx=(0, 6)
+        )
+
+        ctk.CTkLabel(
+            activity_card,
+            text="Activity Monitor",
+            font=FONT_SECTION,
+            text_color=TEXT
+        ).pack(anchor="w", padx=16, pady=(15, 3))
+
+        ctk.CTkLabel(
+            activity_card,
+            text="STORAGE EVENTS",
+            font=FONT_TECH,
+            text_color=MUTED
+        ).pack(anchor="w", padx=16, pady=(0, 8))
+
+        self.create_event(
+            activity_card,
+            GREEN,
+            "System initialized",
+            "Storage information loaded"
+        )
+
+        self.create_event(
+            activity_card,
+            BLUE,
+            "Disk usage analyzed",
+            f"Current usage: {percentage:.1f}%"
+        )
+
+        self.create_event(
+            activity_card,
+            CYAN,
+            "SafeSpace is ready",
+            "Monitoring modules available"
+        )
+
+        # Quick tools module
+        tools_card = self.create_card(lower_row)
+        tools_card.grid(
+            row=0,
+            column=1,
+            sticky="nsew",
+            padx=(6, 0)
+        )
+
+        ctk.CTkLabel(
+            tools_card,
+            text="Quick Access",
+            font=FONT_SECTION,
+            text_color=TEXT
+        ).pack(anchor="w", padx=16, pady=(15, 3))
+
+        ctk.CTkLabel(
+            tools_card,
+            text="STORAGE TOOLS",
+            font=FONT_TECH,
+            text_color=MUTED
+        ).pack(anchor="w", padx=16, pady=(0, 8))
+
+        self.create_operation(
+            tools_card, "Storage Analyzer", BLUE, "Storage Analyzer"
+        )
+
+        self.create_operation(
+            tools_card, "Duplicate Detection", PURPLE, "Duplicate Detector"
+        )
+
+        self.create_operation(
+            tools_card, "Cleanup Recommendations", ORANGE, "Cleanup Recommendations"
+        )
+
+        self.create_operation(
+            tools_card, "Emergency Mode", RED, "Emergency Mode"
+        )
+
+        # Footer
+        footer = ctk.CTkFrame(
+            self.content,
+            fg_color="#131D29",
+            corner_radius=14
+        )
+        footer.pack(fill="x", pady=(12, 6))
+
+        ctk.CTkLabel(
+            footer,
+            text="◈  SAFESPACE STORAGE GUARDIAN",
+            font=FONT_TECH,
+            text_color=CYAN
+        ).pack(side="left", padx=14, pady=11)
+
+        ctk.CTkLabel(
+            footer,
+            text="SYSTEM OPERATIONAL",
+            font=FONT_TECH,
+            text_color=GREEN
+        ).pack(side="right", padx=14)
+
+    # ==========================================================
+    # ROUNDED COMPONENTS
+    # ==========================================================
+
+    def create_card(self, parent):
+
+        return ctk.CTkFrame(
+            parent,
+            fg_color=CARD,
+            corner_radius=20,
+            border_width=1,
+            border_color=BORDER
+        )
+
+    def create_stat(
+        self, parent, column, title, value, detail, color, card_color
+    ):
+
+        card = ctk.CTkFrame(
+            parent,
+            fg_color=card_color,
+            corner_radius=18,
+            border_width=1,
+            border_color=BORDER
+        )
+
+        card.grid(
+            row=0,
+            column=column,
+            sticky="nsew",
+            padx=4
+        )
 
         ctk.CTkLabel(
             card,
-            text=name,
-            font=("Arial", 15)
-        ).pack(pady=(20, 8))
+            text=title,
+            font=FONT_TECH,
+            text_color=MUTED
+        ).pack(anchor="w", padx=15, pady=(14, 5))
 
         ctk.CTkLabel(
             card,
             text=value,
-            font=("Arial", 26, "bold")
-        ).pack()
+            font=FONT_STAT,
+            text_color=color
+        ).pack(anchor="w", padx=15, pady=3)
 
-    # Storage health section
-    health = ctk.CTkFrame(content)
-    health.pack(fill="x", padx=33, pady=30)
+        ctk.CTkLabel(
+            card,
+            text=detail,
+            font=(MONO, 9),
+            text_color=color
+        ).pack(anchor="w", padx=15, pady=(2, 14))
 
-    ctk.CTkLabel(
-        health,
-        text="Storage Health",
-        font=("Arial", 20, "bold")
-    ).pack(anchor="w", padx=20, pady=(20, 10))
+    def create_event(self, parent, color, title, description):
 
-    ctk.CTkLabel(
-        health,
-        text=f"Health Score: {health_score} / 100",
-        font=("Arial", 18)
-    ).pack(anchor="w", padx=20, pady=5)
+        row = ctk.CTkFrame(
+            parent,
+            fg_color=CARD_ALT,
+            corner_radius=12
+        )
+        row.pack(fill="x", padx=10, pady=4)
 
-    ctk.CTkLabel(
-        health,
-        text=f"Status: {health_status}",
-        font=("Arial", 14)
-    ).pack(anchor="w", padx=20, pady=5)
+        ctk.CTkLabel(
+            row,
+            text="●",
+            text_color=color,
+            font=(FONT, 14)
+        ).pack(side="left", padx=10, pady=8)
 
-    # Storage usage percentage
-    ctk.CTkLabel(
-        health,
-        text=f"Storage Used: {usage_percentage:.2f}%",
-        font=("Arial", 14)
-    ).pack(anchor="w", padx=20, pady=(10, 5))
+        text_frame = ctk.CTkFrame(
+            row,
+            fg_color="transparent"
+        )
+        text_frame.pack(side="left", fill="x", expand=True)
 
-    progress = ctk.CTkProgressBar(
-        health,
-        width=500
-    )
+        ctk.CTkLabel(
+            text_frame,
+            text=title,
+            text_color=TEXT,
+            font=(FONT, 11, "bold")
+        ).pack(anchor="w", pady=(6, 0))
 
-    progress.pack(anchor="w", padx=20, pady=(5, 20))
+        ctk.CTkLabel(
+            text_frame,
+            text=description,
+            text_color=MUTED,
+            font=(FONT, 10)
+        ).pack(anchor="w", pady=(0, 6))
 
-    progress.set(usage_percentage / 100)
+    def create_operation(self, parent, title, color, page):
 
+        button = ctk.CTkButton(
+            parent,
+            text=f"   ◈   {title}",
+            height=36,
+            corner_radius=11,
+            fg_color=CARD_ALT,
+            hover_color="#2A374B",
+            text_color=color,
+            font=(FONT, 11, "bold"),
+            anchor="w",
+            command=lambda: self.open_page(page)
+        )
 
-def show_page(page_name):
+        button.pack(fill="x", padx=10, pady=4)
 
-    if page_name == "Dashboard":
-        show_dashboard()
-        return
+    # ==========================================================
+    # TOOL PAGES
+    # ==========================================================
 
-    clear_content()
+    def show_tool_page(self, name):
 
-    heading = ctk.CTkLabel(
-        content,
-        text=page_name,
-        font=("Arial", 28, "bold")
-    )
-    heading.pack(anchor="w", padx=30, pady=(30, 10))
+        self.clear_content()
 
-    description = ctk.CTkLabel(
-        content,
-        text=f"Welcome to the {page_name} section.",
-        font=("Arial", 16)
-    )
-    description.pack(anchor="w", padx=30, pady=5)
+        colors = dict(self.pages)
+        color = colors.get(name, BLUE)
 
-    feature_frame = ctk.CTkFrame(content)
-    feature_frame.pack(fill="x", padx=30, pady=30)
+        panel = ctk.CTkFrame(
+            self.content,
+            fg_color=CARD,
+            corner_radius=22,
+            border_width=1,
+            border_color=BORDER
+        )
 
-    ctk.CTkLabel(
-        feature_frame,
-        text=page_name,
-        font=("Arial", 20, "bold")
-    ).pack(anchor="w", padx=20, pady=(20, 10))
+        panel.pack(fill="both", expand=True, padx=5, pady=10)
 
-    ctk.CTkLabel(
-        feature_frame,
-        text="This feature will be connected to the SafeSpace backend.",
-        font=("Arial", 14)
-    ).pack(anchor="w", padx=20, pady=10)
+        ctk.CTkLabel(
+            panel,
+            text="SAFESPACE MODULE",
+            font=FONT_TECH,
+            text_color=color
+        ).pack(pady=(65, 8))
 
-    ctk.CTkLabel(
-        feature_frame,
-        text="Feature setup and integration will be added in upcoming stages.",
-        font=("Arial", 13)
-    ).pack(anchor="w", padx=20, pady=(5, 20))
+        ctk.CTkLabel(
+            panel,
+            text=name,
+            font=(FONT, 27, "bold"),
+            text_color=TEXT
+        ).pack(pady=8)
 
-# ================= NAVIGATION BUTTONS =================
+        ctk.CTkLabel(
+            panel,
+            text="● MODULE READY",
+            font=(MONO, 11, "bold"),
+            text_color=GREEN
+        ).pack(pady=5)
 
-pages = [
-    "Dashboard",
-    "Storage Analyzer",
-    "Folder Analyzer",
-    "Duplicate Detector",
-    "Activity Monitor",
-    "Cleanup Recommendations",
-    "Emergency Mode",
-    "Recovery Vault",
-    "Storage Reports",
-    "Storage History"
-]
+        ctk.CTkLabel(
+            panel,
+            text="This module will be connected to its corresponding backend.",
+            font=FONT_BODY,
+            text_color=MUTED
+        ).pack(pady=8)
 
-nav_buttons = []
+        ctk.CTkButton(
+            panel,
+            text="←  BACK TO DASHBOARD",
+            height=42,
+            corner_radius=14,
+            fg_color=color,
+            hover_color=color,
+            text_color="#FFFFFF",
+            font=(FONT, 12, "bold"),
+            command=lambda: self.open_page("Dashboard")
+        ).pack(pady=25)
 
-def select_page(page_name):
+# ==========================================================
+# RUN
+# ==========================================================
 
-    show_page(page_name)
+if __name__ == "__main__":
 
-    for button in nav_buttons:
-
-        if button.cget("text") == page_name:
-            button.configure(fg_color="#144870")
-        else:
-            button.configure(fg_color="#1F6AA5")
-
-for page in pages:
-
-    button = ctk.CTkButton(
-        sidebar,
-        text=page,
-        height=38,
-        corner_radius=8,
-        anchor="w",
-        fg_color="#1F6AA5",
-        command=lambda name=page: select_page(name)
-    )
-
-    button.pack(fill="x", padx=15, pady=4)
-
-    nav_buttons.append(button)
-
-# ================= FOOTER =================
-
-footer = ctk.CTkLabel(
-    sidebar,
-    text="SafeSpace v1.0",
-    font=("Arial", 11)
-)
-footer.pack(side="bottom", pady=20)
-
-# Open dashboard initially
-select_page("Dashboard")
-
-# Run application
-app.mainloop()
+    app = SafeSpaceApp()
+    app.mainloop()
