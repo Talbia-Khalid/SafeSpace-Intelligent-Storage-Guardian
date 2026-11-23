@@ -2,8 +2,16 @@
 #include <string.h>
 #include "safespace.h"
 
-int main()
+int main(int argc, char *argv[])
 {
+	
+    // GUI integration mode
+    if (argc > 1 && strcmp(argv[1], "--storage") == 0)
+    {
+        check_storage();
+        return 0;
+    }
+
     char path[1024];
 
     printf("================================\n");
