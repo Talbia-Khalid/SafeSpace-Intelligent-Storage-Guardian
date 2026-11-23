@@ -1,7 +1,8 @@
-
 import customtkinter as ctk
 import tkinter as tk
 import shutil
+import subprocess
+import os
 from datetime import datetime
 
 # ==========================================================
@@ -39,6 +40,7 @@ FONT_BODY = (FONT, 12)
 FONT_SMALL = (FONT, 10)
 FONT_STAT = (FONT, 29, "bold")
 FONT_TECH = (MONO, 10)
+
 
 class SafeSpaceApp(ctk.CTk):
 
@@ -293,8 +295,13 @@ class SafeSpaceApp(ctk.CTk):
                     text_color="#A8B5C7"
                 )
 
+        # CORRECTED ROUTING
         if name == "Dashboard":
             self.show_dashboard()
+
+        elif name == "Storage Analyzer":
+            self.show_storage_analyzer()
+
         else:
             self.show_tool_page(name)
 
@@ -863,6 +870,176 @@ class SafeSpaceApp(ctk.CTk):
             font=(FONT, 12, "bold"),
             command=lambda: self.open_page("Dashboard")
         ).pack(pady=25)
+
+    # ==========================================================
+    # STORAGE ANALYZER
+    # ==========================================================
+
+    def show_storage_analyzer(self):
+
+        self.clear_content()
+
+        panel = ctk.CTkFrame(
+            self.content,
+            fg_color=CARD,
+            corner_radius=22,
+            border_width=1,
+            border_color=BORDER
+        )
+
+        panel.pack(fill="both", expand=True, padx=5, pady=10)
+
+        ctk.CTkLabel(
+            panel,
+            text="SYSTEM STORAGE ANALYSIS",
+            font=FONT_TECH,
+            text_color=CYAN
+        ).pack(pady=(30, 8))
+
+        ctk.CTkLabel(
+            panel,
+            text="Storage Analyzer",
+            font=(FONT, 27, "bold"),
+            text_color=TEXT
+        ).pack(pady=8)
+
+        ctk.CTkLabel(
+            panel,
+            text="Analyze real-time storage usage of your system.",
+            font=FONT_BODY,
+            text_color=MUTED
+        ).pack(pady=5)
+
+        result_box = ctk.CTkTextbox(
+            panel,
+            width=700,
+            height=250,
+            corner_radius=16,
+            fg_color=BG,
+            text_color=CYAN,
+            font=(MONO, 13),
+            border_width=1,
+            border_color=BORDER
+        )
+
+        result_box.pack(fill="x", padx=35, pady=25)
+
+        result_box.insert(
+            "1.0",
+            "Storage analysis results will appear here."
+        )
+
+        result_box.configure(state="disabled")
+
+        # --------------------------------------------------
+        # RUN STORAGE ANALYSIS
+        # --------------------------------------------------
+
+        def run_analysis():
+
+            result_box.configure(state="normal")
+            result_box.delete("1.0", "end")
+
+            result_box.insert(
+                "1.0",
+                "Analyzing system storage...\n"
+            )
+
+            result_box.configure(state="disabled")
+
+            project_path = os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))
+            )
+
+            try:
+
+                result = subprocess.run(
+                    ["./backend/safespace", "--storage"],
+                    cwd=project_path,
+                    capture_output=True,
+                    text=True,
+                    timeout=20
+                )
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                if result.returncode == 0:
+
+                    result_box.insert(
+                        "1.0",
+                        result.stdout
+                    )
+
+                    if result.stderr:
+                        result_box.insert(
+                            "end",
+                            "\nWarnings:\n" + result.stderr
+                        )
+
+                else:
+
+                    result_box.insert(
+                        "1.0",
+                        "Storage analysis failed.\n\n"
+                        + result.stderr
+                        + result.stdout
+                    )
+
+                result_box.configure(state="disabled")
+
+            except subprocess.TimeoutExpired:
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    "Error: Storage analysis took too long."
+                )
+
+                result_box.configure(state="disabled")
+
+            except Exception as error:
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    f"Error: {error}"
+                )
+
+                result_box.configure(state="disabled")
+
+        # --------------------------------------------------
+        # BUTTONS
+        # --------------------------------------------------
+
+        ctk.CTkButton(
+            panel,
+            text="RUN STORAGE ANALYSIS",
+            height=48,
+            corner_radius=14,
+            fg_color=BLUE,
+            hover_color="#4779D8",
+            text_color="#FFFFFF",
+            font=(FONT, 13, "bold"),
+            command=run_analysis
+        ).pack(pady=10)
+
+        ctk.CTkButton(
+            panel,
+            text="←  BACK TO DASHBOARD",
+            height=42,
+            corner_radius=14,
+            fg_color=CARD_ALT,
+            hover_color=BORDER,
+            text_color=TEXT,
+            font=(FONT, 12, "bold"),
+            command=lambda: self.open_page("Dashboard")
+        ).pack(pady=(10, 25))
+
 
 # ==========================================================
 # RUN
