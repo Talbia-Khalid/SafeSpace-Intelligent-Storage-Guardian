@@ -4,15 +4,21 @@
 
 int main(int argc, char *argv[])
 {
-	
-    // GUI integration mode
+    char path[1024];
+
+    // GUI integration mode: Storage Analyzer
     if (argc > 1 && strcmp(argv[1], "--storage") == 0)
     {
         check_storage();
         return 0;
     }
 
-    char path[1024];
+    // GUI integration mode: Folder Analyzer
+    if (argc > 2 && strcmp(argv[1], "--folder") == 0)
+    {
+        analyze_directory(argv[2]);
+        return 0;
+    }
 
     printf("================================\n");
     printf("       Welcome to SafeSpace\n");
@@ -44,13 +50,13 @@ int main(int argc, char *argv[])
 
     char choice;
 
-printf("\nDo you want to start file activity monitoring? (y/n): ");
-scanf(" %c", &choice);
+    printf("\nDo you want to start file activity monitoring? (y/n): ");
+    scanf(" %c", &choice);
 
-if (choice == 'y' || choice == 'Y')
-{
-    monitor_directory(path);
-}
+    if (choice == 'y' || choice == 'Y')
+    {
+        monitor_directory(path);
+    }
 
     printf("\nSafeSpace analysis completed!\n");
 

@@ -4,6 +4,7 @@ import shutil
 import subprocess
 import os
 from datetime import datetime
+from tkinter import filedialog
 
 # ==========================================================
 # SAFESPACE - ROUNDED CYBERSECURITY INTERFACE
@@ -302,6 +303,9 @@ class SafeSpaceApp(ctk.CTk):
         elif name == "Storage Analyzer":
             self.show_storage_analyzer()
 
+        elif name == "Folder Analyzer":
+           self.show_folder_analyzer()
+ 
         else:
             self.show_tool_page(name)
 
@@ -871,6 +875,253 @@ class SafeSpaceApp(ctk.CTk):
             command=lambda: self.open_page("Dashboard")
         ).pack(pady=25)
 
+    # ==========================================================
+    # FOLDER ANALYZER
+    # ==========================================================
+
+    def show_folder_analyzer(self):
+
+        self.clear_content()
+
+        panel = ctk.CTkFrame(
+            self.content,
+            fg_color=CARD,
+            corner_radius=22,
+            border_width=1,
+            border_color=BORDER
+        )
+
+        panel.pack(fill="both", expand=True, padx=5, pady=10)
+
+        ctk.CTkLabel(
+            panel,
+            text="FOLDER STORAGE ANALYSIS",
+            font=FONT_TECH,
+            text_color=CYAN
+        ).pack(pady=(30, 8))
+
+        ctk.CTkLabel(
+            panel,
+            text="Folder Analyzer",
+            font=(FONT, 27, "bold"),
+            text_color=TEXT
+        ).pack(pady=8)
+
+        ctk.CTkLabel(
+            panel,
+            text="Select a folder to analyze its files, subfolders and storage size.",
+            font=FONT_BODY,
+            text_color=MUTED
+        ).pack(pady=5)
+
+        # Selected folder display
+
+        folder_label = ctk.CTkLabel(
+            panel,
+            text="No folder selected",
+            font=FONT_TECH,
+            text_color=MUTED,
+            wraplength=650
+        )
+
+        folder_label.pack(pady=15)
+
+        # Results box
+
+        result_box = ctk.CTkTextbox(
+            panel,
+            width=700,
+            height=250,
+            corner_radius=16,
+            fg_color=BG,
+            text_color=CYAN,
+            font=(MONO, 13),
+            border_width=1,
+            border_color=BORDER
+        )
+
+        result_box.pack(fill="x", padx=35, pady=15)
+
+        result_box.insert(
+            "1.0",
+            "Select a folder to begin analysis."
+        )
+
+        result_box.configure(state="disabled")
+
+        # Store selected folder
+
+        selected_folder = {"path": ""}
+
+        # --------------------------------------------------
+        # SELECT FOLDER
+        # --------------------------------------------------
+
+        def select_folder():
+
+            folder_path = filedialog.askdirectory(
+                title="Select Folder to Analyze"
+            )
+
+            if folder_path:
+
+                selected_folder["path"] = folder_path
+
+                folder_label.configure(
+                    text=folder_path,
+                    text_color=CYAN
+                )
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    "Folder selected successfully.\n\n"
+                    "Click RUN FOLDER ANALYSIS to continue."
+                )
+
+                result_box.configure(state="disabled")
+
+        # --------------------------------------------------
+        # RUN FOLDER ANALYSIS
+        # --------------------------------------------------
+
+        def run_analysis():
+
+            folder_path = selected_folder["path"]
+
+            if not folder_path:
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    "Please select a folder first."
+                )
+
+                result_box.configure(state="disabled")
+                return
+
+            result_box.configure(state="normal")
+            result_box.delete("1.0", "end")
+
+            result_box.insert(
+                "1.0",
+                "Analyzing selected folder...\nPlease wait."
+            )
+
+            result_box.configure(state="disabled")
+
+            project_path = os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))
+            )
+
+            try:
+
+                result = subprocess.run(
+                    [
+                        "./backend/safespace",
+                        "--folder",
+                        folder_path
+                    ],
+                    cwd=project_path,
+                    capture_output=True,
+                    text=True,
+                    timeout=120
+                )
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                if result.returncode == 0:
+
+                    result_box.insert(
+                        "1.0",
+                        result.stdout
+                    )
+
+                    if result.stderr:
+                        result_box.insert(
+                            "end",
+                            "\nWarnings:\n" + result.stderr
+                        )
+
+                else:
+
+                    result_box.insert(
+                        "1.0",
+                        "Folder analysis failed.\n\n"
+                        + result.stderr
+                        + result.stdout
+                    )
+
+                result_box.configure(state="disabled")
+
+            except subprocess.TimeoutExpired:
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    "Error: Folder analysis took too long."
+                )
+
+                result_box.configure(state="disabled")
+
+            except Exception as error:
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    f"Error: {error}"
+                )
+
+                result_box.configure(state="disabled")
+
+        # --------------------------------------------------
+        # BUTTONS
+        # --------------------------------------------------
+
+        ctk.CTkButton(
+            panel,
+            text="SELECT FOLDER",
+            height=45,
+            corner_radius=14,
+            fg_color="#26374C",
+            hover_color="#344A63",
+            text_color=CYAN,
+            font=(FONT, 12, "bold"),
+            command=select_folder
+        ).pack(pady=8)
+
+        ctk.CTkButton(
+            panel,
+            text="RUN FOLDER ANALYSIS",
+            height=48,
+            corner_radius=14,
+            fg_color=BLUE,
+            hover_color="#4779D8",
+            text_color="#FFFFFF",
+            font=(FONT, 13, "bold"),
+            command=run_analysis
+        ).pack(pady=8)
+
+        ctk.CTkButton(
+            panel,
+            text="←  BACK TO DASHBOARD",
+            height=42,
+            corner_radius=14,
+            fg_color=CARD_ALT,
+            hover_color=BORDER,
+            text_color=TEXT,
+            font=(FONT, 12, "bold"),
+            command=lambda: self.open_page("Dashboard")
+        ).pack(pady=(10, 25))
     # ==========================================================
     # STORAGE ANALYZER
     # ==========================================================
