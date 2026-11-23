@@ -12,6 +12,7 @@ volatile sig_atomic_t monitoring = 1;
 
 void stop_monitoring(int signal_number)
 {
+    (void)signal_number;
     monitoring = 0;
 }
 

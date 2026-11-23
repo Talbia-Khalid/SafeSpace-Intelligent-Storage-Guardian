@@ -32,8 +32,8 @@ void scan_cleanup(char path[])
         int length = snprintf(full_path, sizeof(full_path),
                              "%s/%s", path, entry->d_name);
 
-        if (length < 0 || length >= sizeof(full_path))
-            continue;
+        if (length < 0 || (size_t)length >= sizeof(full_path))
+         continue;
 
         if (lstat(full_path, &info) != 0)
             continue;
