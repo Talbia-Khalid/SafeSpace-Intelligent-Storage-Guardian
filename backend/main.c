@@ -27,6 +27,13 @@ int main(int argc, char *argv[])
       return 0;
     }
 
+    // GUI integration mode: Activity Monitor
+     if (argc > 2 && strcmp(argv[1], "--monitor") == 0)
+    {
+       monitor_directory(argv[2]);
+       return 0;
+    }
+
     printf("================================\n");
     printf("       Welcome to SafeSpace\n");
     printf("================================\n");
