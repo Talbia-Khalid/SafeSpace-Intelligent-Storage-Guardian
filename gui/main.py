@@ -305,6 +305,9 @@ class SafeSpaceApp(ctk.CTk):
 
         elif name == "Folder Analyzer":
            self.show_folder_analyzer()
+
+        elif name == "Duplicate Detector":
+            self.show_duplicate_detector()
  
         else:
             self.show_tool_page(name)
@@ -1278,6 +1281,255 @@ class SafeSpaceApp(ctk.CTk):
             font=(FONT, 13, "bold"),
             command=run_analysis
         ).pack(pady=10)
+
+        ctk.CTkButton(
+            panel,
+            text="←  BACK TO DASHBOARD",
+            height=42,
+            corner_radius=14,
+            fg_color=CARD_ALT,
+            hover_color=BORDER,
+            text_color=TEXT,
+            font=(FONT, 12, "bold"),
+            command=lambda: self.open_page("Dashboard")
+        ).pack(pady=(10, 25))
+
+    # ==========================================================
+    # DUPLICATE DETECTOR
+    # ==========================================================
+
+    def show_duplicate_detector(self):
+
+        self.clear_content()
+
+        panel = ctk.CTkFrame(
+            self.content,
+            fg_color=CARD,
+            corner_radius=22,
+            border_width=1,
+            border_color=BORDER
+        )
+
+        panel.pack(fill="both", expand=True, padx=5, pady=10)
+
+        ctk.CTkLabel(
+            panel,
+            text="DUPLICATE FILE DETECTION",
+            font=FONT_TECH,
+            text_color=PURPLE
+        ).pack(pady=(30, 8))
+
+        ctk.CTkLabel(
+            panel,
+            text="Duplicate Detector",
+            font=(FONT, 27, "bold"),
+            text_color=TEXT
+        ).pack(pady=8)
+
+        ctk.CTkLabel(
+            panel,
+            text="Find identical files and identify potential storage savings.",
+            font=FONT_BODY,
+            text_color=MUTED
+        ).pack(pady=5)
+
+        # Selected folder display
+
+        folder_label = ctk.CTkLabel(
+            panel,
+            text="No folder selected",
+            font=FONT_TECH,
+            text_color=MUTED,
+            wraplength=650
+        )
+
+        folder_label.pack(pady=15)
+
+        # Results box
+
+        result_box = ctk.CTkTextbox(
+            panel,
+            width=700,
+            height=250,
+            corner_radius=16,
+            fg_color=BG,
+            text_color=PURPLE,
+            font=(MONO, 13),
+            border_width=1,
+            border_color=BORDER
+        )
+
+        result_box.pack(fill="x", padx=35, pady=15)
+
+        result_box.insert(
+            "1.0",
+            "Select a folder to search for duplicate files."
+        )
+
+        result_box.configure(state="disabled")
+
+        # Store selected folder
+
+        selected_folder = {"path": ""}
+
+        # --------------------------------------------------
+        # SELECT FOLDER
+        # --------------------------------------------------
+
+        def select_folder():
+
+            folder_path = filedialog.askdirectory(
+                title="Select Folder for Duplicate Detection"
+            )
+
+            if folder_path:
+
+                selected_folder["path"] = folder_path
+
+                folder_label.configure(
+                    text=folder_path,
+                    text_color=PURPLE
+                )
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    "Folder selected successfully.\n\n"
+                    "Click SCAN DUPLICATES to begin."
+                )
+
+                result_box.configure(state="disabled")
+
+        # --------------------------------------------------
+        # RUN DUPLICATE SCAN
+        # --------------------------------------------------
+
+        def run_duplicate_scan():
+
+            folder_path = selected_folder["path"]
+
+            if not folder_path:
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    "Please select a folder first."
+                )
+
+                result_box.configure(state="disabled")
+                return
+
+            result_box.configure(state="normal")
+            result_box.delete("1.0", "end")
+
+            result_box.insert(
+                "1.0",
+                "Scanning for duplicate files...\n"
+                "Please wait."
+            )
+
+            result_box.configure(state="disabled")
+
+            project_path = os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))
+            )
+
+            try:
+
+                result = subprocess.run(
+                    [
+                        "./backend/safespace",
+                        "--duplicates",
+                        folder_path
+                    ],
+                    cwd=project_path,
+                    capture_output=True,
+                    text=True,
+                    timeout=120
+                )
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                if result.returncode == 0:
+
+                    result_box.insert(
+                        "1.0",
+                        result.stdout
+                    )
+
+                    if result.stderr:
+                        result_box.insert(
+                            "end",
+                            "\nWarnings:\n" + result.stderr
+                        )
+
+                else:
+
+                    result_box.insert(
+                        "1.0",
+                        "Duplicate detection failed.\n\n"
+                        + result.stderr
+                        + result.stdout
+                    )
+
+                result_box.configure(state="disabled")
+
+            except subprocess.TimeoutExpired:
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    "Error: Duplicate scanning took too long."
+                )
+
+                result_box.configure(state="disabled")
+
+            except Exception as error:
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    f"Error: {error}"
+                )
+
+                result_box.configure(state="disabled")
+
+        # --------------------------------------------------
+        # BUTTONS
+        # --------------------------------------------------
+
+        ctk.CTkButton(
+            panel,
+            text="SELECT FOLDER",
+            height=45,
+            corner_radius=14,
+            fg_color="#302747",
+            hover_color="#453663",
+            text_color=PURPLE,
+            font=(FONT, 12, "bold"),
+            command=select_folder
+        ).pack(pady=8)
+
+        ctk.CTkButton(
+            panel,
+            text="SCAN DUPLICATES",
+            height=48,
+            corner_radius=14,
+            fg_color=PURPLE,
+            hover_color="#8872DB",
+            text_color="#FFFFFF",
+            font=(FONT, 13, "bold"),
+            command=run_duplicate_scan
+        ).pack(pady=8)
 
         ctk.CTkButton(
             panel,
