@@ -20,6 +20,13 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    // GUI integration mode: Duplicate Detector
+    if (argc > 2 && strcmp(argv[1], "--duplicates") == 0)
+    {
+      detect_duplicates(argv[2]);
+      return 0;
+    }
+
     printf("================================\n");
     printf("       Welcome to SafeSpace\n");
     printf("================================\n");
