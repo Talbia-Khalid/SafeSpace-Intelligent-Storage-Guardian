@@ -11,12 +11,29 @@ struct FileData
 {
     char path[1024];
     char hash[65];
+    unsigned long long size;
 };
 
 struct FileData files[MAX_FILES];
 
 int file_total = 0;
 
+// Skip unnecessary directories
+int should_skip_directory(char name[])
+{
+    if (strcmp(name, ".git") == 0 ||
+        strcmp(name, "venv") == 0 ||
+        strcmp(name, ".venv") == 0 ||
+        strcmp(name, "__pycache__") == 0 ||
+        strcmp(name, "node_modules") == 0)
+    {
+        return 1;
+    }
+
+    return 0;
+}
+
+// Calculate SHA-256 hash
 void calculate_hash(char path[], char hash[])
 {
     FILE *file;
@@ -24,30 +41,53 @@ void calculate_hash(char path[], char hash[])
     unsigned char digest[EVP_MAX_MD_SIZE];
 
     unsigned int length = 0;
+    size_t bytes;
 
-    EVP_MD_CTX *context = EVP_MD_CTX_new();
-
-    if (context == NULL)
-        return;
+    hash[0] = '\0';
 
     file = fopen(path, "rb");
 
     if (file == NULL)
+        return;
+
+    EVP_MD_CTX *context = EVP_MD_CTX_new();
+
+    if (context == NULL)
     {
-        EVP_MD_CTX_free(context);
+        fclose(file);
         return;
     }
 
-    EVP_DigestInit_ex(context, EVP_sha256(), NULL);
-
-    size_t bytes;
+    if (EVP_DigestInit_ex(context, EVP_sha256(), NULL) != 1)
+    {
+        EVP_MD_CTX_free(context);
+        fclose(file);
+        return;
+    }
 
     while ((bytes = fread(buffer, 1, sizeof(buffer), file)) > 0)
     {
-        EVP_DigestUpdate(context, buffer, bytes);
+        if (EVP_DigestUpdate(context, buffer, bytes) != 1)
+        {
+            EVP_MD_CTX_free(context);
+            fclose(file);
+            return;
+        }
     }
 
-    EVP_DigestFinal_ex(context, digest, &length);
+    if (ferror(file))
+    {
+        EVP_MD_CTX_free(context);
+        fclose(file);
+        return;
+    }
+
+    if (EVP_DigestFinal_ex(context, digest, &length) != 1)
+    {
+        EVP_MD_CTX_free(context);
+        fclose(file);
+        return;
+    }
 
     for (unsigned int i = 0; i < length; i++)
     {
@@ -60,6 +100,7 @@ void calculate_hash(char path[], char hash[])
     EVP_MD_CTX_free(context);
 }
 
+// Scan files recursively
 void scan_files(char path[])
 {
     DIR *dir;
@@ -81,47 +122,83 @@ void scan_files(char path[])
 
         char full_path[1024];
 
-        snprintf(full_path, sizeof(full_path),
-                 "%s/%s", path, entry->d_name);
+        int length = snprintf(
+            full_path,
+            sizeof(full_path),
+            "%s/%s",
+            path,
+            entry->d_name
+        );
+
+        if (length < 0 || (size_t)length >= sizeof(full_path))
+            continue;
 
         if (lstat(full_path, &info) != 0)
             continue;
 
         if (S_ISDIR(info.st_mode))
         {
-            scan_files(full_path);
-        }
-        else if (S_ISREG(info.st_mode))
-        {
-            if (file_total >= MAX_FILES)
+            if (should_skip_directory(entry->d_name))
                 continue;
 
-            strcpy(files[file_total].path, full_path);
+            scan_files(full_path);
+        }
+        else if (S_ISREG(info.st_mode) && info.st_size > 0)
+        {
+           if (file_total >= MAX_FILES) continue;
 
-            calculate_hash(full_path, files[file_total].hash);
+            snprintf(
+                files[file_total].path,
+                sizeof(files[file_total].path),
+                "%s",
+                full_path
+            );
+
+            files[file_total].size = info.st_size;
+
+            calculate_hash(
+                full_path,
+                files[file_total].hash
+            );
 
             if (files[file_total].hash[0] != '\0')
+            {
                 file_total++;
+            }
         }
     }
 
     closedir(dir);
 }
 
+// Detect duplicate files
 void detect_duplicates(char path[])
 {
     file_total = 0;
 
     printf("\nScanning files for duplicates...\n");
+    printf("Ignored directories: venv, .git, __pycache__ and others.\n");
 
     scan_files(path);
 
     int duplicate_count = 0;
+    unsigned long long saved_size = 0;
 
     printf("\n===== DUPLICATE FILES =====\n");
 
-    for (int i = 0; i < file_total; i++)
-    {
+        for (int i = 0; i < file_total; i++)
+       {
+         int has_earlier_match = 0;
+
+        for (int j = 0; j < i; j++)
+        {
+            if (strcmp(files[i].hash, files[j].hash) == 0)
+            {
+                has_earlier_match = 1;
+                break;
+            }
+        }
+
         for (int j = i + 1; j < file_total; j++)
         {
             if (strcmp(files[i].hash, files[j].hash) == 0)
@@ -133,6 +210,11 @@ void detect_duplicates(char path[])
                 duplicate_count++;
             }
         }
+
+        if (has_earlier_match)
+        {
+            saved_size += files[i].size;
+        }
     }
 
     if (duplicate_count == 0)
@@ -140,6 +222,11 @@ void detect_duplicates(char path[])
         printf("No duplicate files found.\n");
     }
 
-    printf("\nTotal duplicate pairs: %d\n", duplicate_count);
+    printf("\nTotal Files Scanned: %d\n", file_total);
+    printf("Total Duplicate Pairs: %d\n", duplicate_count);
+
+    printf("Potential Storage Savings: %.2f MB\n",
+           saved_size / (1024.0 * 1024));
+
     printf("===========================\n");
 }
