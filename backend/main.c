@@ -34,6 +34,13 @@ int main(int argc, char *argv[])
        return 0;
     }
 
+    // GUI integration mode: Emergency Mode
+    if (argc > 2 && strcmp(argv[1], "--emergency") == 0)
+    {
+      emergency_mode(argv[2]);
+      return 0;
+    }
+
     printf("================================\n");
     printf("       Welcome to SafeSpace\n");
     printf("================================\n");
