@@ -3,6 +3,8 @@ import tkinter as tk
 import shutil
 import subprocess
 import os
+import threading
+import queue
 from datetime import datetime
 from tkinter import filedialog
 
@@ -308,6 +310,9 @@ class SafeSpaceApp(ctk.CTk):
 
         elif name == "Duplicate Detector":
             self.show_duplicate_detector()
+
+        elif name == "Activity Monitor":
+            self.show_activity_monitor()
  
         else:
             self.show_tool_page(name)
@@ -1530,6 +1535,486 @@ class SafeSpaceApp(ctk.CTk):
             font=(FONT, 13, "bold"),
             command=run_duplicate_scan
         ).pack(pady=8)
+
+        ctk.CTkButton(
+            panel,
+            text="←  BACK TO DASHBOARD",
+            height=42,
+            corner_radius=14,
+            fg_color=CARD_ALT,
+            hover_color=BORDER,
+            text_color=TEXT,
+            font=(FONT, 12, "bold"),
+            command=lambda: self.open_page("Dashboard")
+        ).pack(pady=(10, 25))
+
+
+    # ==========================================================
+    # ACTIVITY MONITOR
+    # ==========================================================
+
+    def show_activity_monitor(self):
+
+        self.clear_content()
+
+        panel = ctk.CTkFrame(
+            self.content,
+            fg_color=CARD,
+            corner_radius=22,
+            border_width=1,
+            border_color=BORDER
+        )
+
+        panel.pack(fill="both", expand=True, padx=5, pady=10)
+
+        ctk.CTkLabel(
+            panel,
+            text="REAL-TIME FILE SYSTEM MONITORING",
+            font=FONT_TECH,
+            text_color=GREEN
+        ).pack(pady=(30, 8))
+
+        ctk.CTkLabel(
+            panel,
+            text="Activity Monitor",
+            font=(FONT, 27, "bold"),
+            text_color=TEXT
+        ).pack(pady=8)
+
+        ctk.CTkLabel(
+            panel,
+            text="Monitor file activities inside your selected folder.",
+            font=FONT_BODY,
+            text_color=MUTED
+        ).pack(pady=5)
+
+        folder_label = ctk.CTkLabel(
+            panel,
+            text="No folder selected",
+            font=FONT_TECH,
+            text_color=MUTED,
+            wraplength=650
+        )
+
+        folder_label.pack(pady=12)
+
+        status_label = ctk.CTkLabel(
+            panel,
+            text="● MONITORING STOPPED",
+            font=(FONT, 12, "bold"),
+            text_color=RED
+        )
+
+        status_label.pack(pady=5)
+
+        result_box = ctk.CTkTextbox(
+            panel,
+            width=700,
+            height=250,
+            corner_radius=16,
+            fg_color=BG,
+            text_color=GREEN,
+            font=(MONO, 12),
+            border_width=1,
+            border_color=BORDER
+        )
+
+        result_box.pack(fill="x", padx=35, pady=15)
+
+        result_box.insert(
+            "1.0",
+            "Select a folder and start monitoring.\n"
+        )
+
+        result_box.configure(state="disabled")
+
+        selected_folder = {"path": ""}
+        test_file = {"path": None}
+
+        # Background monitoring variables
+
+        self.monitor_process = None
+        self.monitor_queue = queue.Queue()
+        self.monitor_thread = None
+        self.monitor_after_id = None
+
+        # --------------------------------------------------
+        # DISPLAY MESSAGE
+        # --------------------------------------------------
+
+        def add_message(message):
+
+            result_box.configure(state="normal")
+            result_box.insert("end", message + "\n")
+            result_box.see("end")
+            result_box.configure(state="disabled")
+
+        # --------------------------------------------------
+        # SELECT FOLDER
+        # --------------------------------------------------
+
+        def select_folder():
+
+            if self.monitor_process is not None:
+                add_message("Stop monitoring before changing folders.")
+                return
+
+            folder_path = filedialog.askdirectory(
+                title="Select Folder to Monitor"
+            )
+
+            if folder_path:
+
+                selected_folder["path"] = folder_path
+
+                folder_label.configure(
+                    text=folder_path,
+                    text_color=GREEN
+                )
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+
+                result_box.insert(
+                    "1.0",
+                    "Folder selected successfully.\n"
+                    "Click START MONITORING to begin."
+                )
+
+                result_box.configure(state="disabled")
+
+        # --------------------------------------------------
+        # READ BACKGROUND OUTPUT
+        # --------------------------------------------------
+
+        def read_monitor_output(process):
+
+            try:
+                for line in process.stdout:
+                    self.monitor_queue.put(line.rstrip())
+
+            except Exception as error:
+                self.monitor_queue.put(f"Monitor error: {error}")
+
+        # --------------------------------------------------
+        # CHECK MONITORING EVENTS
+        # --------------------------------------------------
+
+        def check_events():
+
+            if self.monitor_process is None:
+                return
+
+            while True:
+
+                try:
+                    message = self.monitor_queue.get_nowait()
+
+                    if message:
+                        add_message(message)
+
+                except queue.Empty:
+                    break
+
+            if self.monitor_process.poll() is not None:
+
+                return_code = self.monitor_process.returncode
+
+                self.monitor_process = None
+
+                status_label.configure(
+                    text="● MONITORING STOPPED",
+                    text_color=RED
+                )
+
+                start_button.configure(state="normal")
+                stop_button.configure(state="disabled")
+
+                add_message(
+                    f"Monitoring process ended. Exit code: {return_code}"
+                )
+
+                return
+
+            self.monitor_after_id = self.after(
+                100,
+                check_events
+            )
+
+        # --------------------------------------------------
+        # START MONITORING
+        # --------------------------------------------------
+
+        def start_monitoring():
+
+            folder_path = selected_folder["path"]
+
+            if not folder_path:
+
+                add_message("Please select a folder first.")
+                return
+
+            project_path = os.path.dirname(
+                os.path.dirname(os.path.abspath(__file__))
+            )
+
+            try:
+
+                result_box.configure(state="normal")
+                result_box.delete("1.0", "end")
+                result_box.configure(state="disabled")
+
+                self.monitor_queue = queue.Queue()
+
+                process = subprocess.Popen(
+                    [
+                        "./backend/safespace",
+                        "--monitor",
+                        folder_path
+                    ],
+                    cwd=project_path,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1
+                )
+
+                self.monitor_process = process
+
+                self.monitor_thread = threading.Thread(
+                    target=read_monitor_output,
+                    args=(process,),
+                    daemon=True
+                )
+
+                self.monitor_thread.start()
+
+                status_label.configure(
+                    text="● MONITORING ACTIVE",
+                    text_color=GREEN
+                )
+
+                start_button.configure(state="disabled")
+                stop_button.configure(state="normal")
+
+                add_message("Starting folder activity monitoring...")
+
+                self.monitor_after_id = self.after(
+                    100,
+                    check_events
+                )
+
+            except Exception as error:
+
+                self.monitor_process = None
+
+                status_label.configure(
+                    text="● MONITORING FAILED",
+                    text_color=RED
+                )
+
+                add_message(f"Error: {error}")
+
+        # --------------------------------------------------
+        # STOP MONITORING
+        # --------------------------------------------------
+
+        def stop_monitoring():
+
+            if self.monitor_process is not None:
+
+                try:
+
+                    self.monitor_process.send_signal(2)
+
+                    status_label.configure(
+                        text="● STOPPING MONITOR",
+                        text_color=ORANGE
+                    )
+
+                    stop_button.configure(state="disabled")
+
+                    add_message("Stopping monitoring...")
+
+                except Exception as error:
+
+                    add_message(f"Error stopping monitor: {error}")
+
+        # --------------------------------------------------
+        # BUILT-IN ACTIVITY TESTING
+        # --------------------------------------------------
+
+        def create_test_file():
+
+            if self.monitor_process is None or self.monitor_process.poll() is not None:
+                add_message("Start monitoring before testing.")
+                return
+
+            folder_path = selected_folder["path"]
+
+            if not folder_path:
+                add_message("Please select a folder first.")
+                return
+
+            file_path = os.path.join(
+                folder_path,
+                "safespace_activity_test.txt"
+            )
+
+            try:
+                with open(file_path, "x") as file:
+                    file.write("SafeSpace Activity Monitor Test\n")
+
+                test_file["path"] = file_path
+                add_message("Test file created successfully.")
+
+            except FileExistsError:
+                add_message("Test file already exists. Delete it first.")
+
+            except Exception as error:
+                add_message(f"Create error: {error}")
+
+        def modify_test_file():
+
+            if not test_file["path"]:
+                add_message("Create a test file first.")
+                return
+
+            if self.monitor_process is None or self.monitor_process.poll() is not None:
+                add_message("Start monitoring before testing.")
+                return
+
+            try:
+                with open(test_file["path"], "a") as file:
+                    file.write("SafeSpace test file modified.\n")
+
+                add_message("Test file modified successfully.")
+
+            except Exception as error:
+                add_message(f"Modify error: {error}")
+
+        def delete_test_file():
+
+            if not test_file["path"]:
+                add_message("No test file created by this session.")
+                return
+
+            if self.monitor_process is None or self.monitor_process.poll() is not None:
+                add_message("Start monitoring before testing.")
+                return
+
+            try:
+                os.remove(test_file["path"])
+
+                test_file["path"] = None
+
+                add_message("Test file deleted successfully.")
+
+            except Exception as error:
+                add_message(f"Delete error: {error}")
+
+        # --------------------------------------------------
+        # BUTTONS
+        # --------------------------------------------------
+
+        ctk.CTkButton(
+            panel,
+            text="SELECT FOLDER",
+            height=43,
+            corner_radius=14,
+            fg_color="#20352F",
+            hover_color="#2B493D",
+            text_color=GREEN,
+            font=(FONT, 12, "bold"),
+            command=select_folder
+        ).pack(pady=6)
+
+        buttons = ctk.CTkFrame(
+            panel,
+            fg_color="transparent"
+        )
+
+        buttons.pack(pady=8)
+
+        start_button = ctk.CTkButton(
+            buttons,
+            text="START MONITORING",
+            height=46,
+            width=190,
+            corner_radius=14,
+            fg_color=GREEN,
+            hover_color="#2DBB85",
+            text_color="#FFFFFF",
+            font=(FONT, 12, "bold"),
+            command=start_monitoring
+        )
+
+        start_button.pack(side="left", padx=6)
+        # --------------------------------------------------
+        # TESTING BUTTONS
+        # --------------------------------------------------
+
+        test_buttons = ctk.CTkFrame(
+            panel,
+            fg_color="transparent"
+        )
+
+        test_buttons.pack(pady=12)
+
+        ctk.CTkButton(
+            test_buttons,
+            text="CREATE TEST FILE",
+            width=170,
+            height=42,
+            corner_radius=12,
+            fg_color="#20352F",
+            hover_color="#2B493D",
+            text_color=GREEN,
+            font=(FONT, 11, "bold"),
+            command=create_test_file
+        ).pack(side="left", padx=5)
+
+        ctk.CTkButton(
+            test_buttons,
+            text="MODIFY TEST FILE",
+            width=170,
+            height=42,
+            corner_radius=12,
+            fg_color="#26364F",
+            hover_color="#354D70",
+            text_color=BLUE,
+            font=(FONT, 11, "bold"),
+            command=modify_test_file
+        ).pack(side="left", padx=5)
+
+        ctk.CTkButton(
+            test_buttons,
+            text="DELETE TEST FILE",
+            width=170,
+            height=42,
+            corner_radius=12,
+            fg_color="#422832",
+            hover_color="#59323D",
+            text_color=RED,
+            font=(FONT, 11, "bold"),
+            command=delete_test_file
+        ).pack(side="left", padx=5)
+
+        stop_button = ctk.CTkButton(
+            buttons,
+            text="STOP MONITORING",
+            height=46,
+            width=190,
+            corner_radius=14,
+            fg_color=RED,
+            hover_color="#D94D61",
+            text_color="#FFFFFF",
+            font=(FONT, 12, "bold"),
+            command=stop_monitoring,
+            state="disabled"
+        )
+
+        stop_button.pack(side="left", padx=6)
 
         ctk.CTkButton(
             panel,
