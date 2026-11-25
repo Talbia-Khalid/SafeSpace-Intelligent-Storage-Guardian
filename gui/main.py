@@ -1611,7 +1611,7 @@ class SafeSpaceApp(ctk.CTk):
 
         ctk.CTkLabel(
             risk_card,
-            text="SYSTEM STORAGE RISK",
+            text="OVERALL GUARDIAN RISK",
             font=FONT_TECH,
             text_color=MUTED
         ).pack(pady=(12, 3))
@@ -1624,6 +1624,14 @@ class SafeSpaceApp(ctk.CTk):
         )
 
         risk_value.pack(pady=(3, 12))
+        guardian_score_label = ctk.CTkLabel(
+        risk_card,
+        text="Assessment Score: Not available",
+        font=FONT_TECH,
+        text_color=CYAN
+)
+
+        guardian_score_label.pack(pady=(0, 12))
 
         # FINDINGS CARDS
         findings_frame = ctk.CTkFrame(
@@ -1758,6 +1766,10 @@ class SafeSpaceApp(ctk.CTk):
                     text="NOT ASSESSED"
                 )
 
+                guardian_score_label.configure(
+                  text="Assessment Score: Not available"
+                )
+
                 empty_value.configure(text="0")
                 temporary_value.configure(text="0")
                 duplicate_value.configure(text="0")
@@ -1820,19 +1832,21 @@ class SafeSpaceApp(ctk.CTk):
                 output = result.stdout
 
                 # STORAGE RISK
-                if "RISK LEVEL: CRITICAL" in output:
+                # OVERALL GUARDIAN RISK
+
+                if "OVERALL GUARDIAN RISK: CRITICAL" in output:
                     risk = "CRITICAL"
                     risk_color = RED
 
-                elif "RISK LEVEL: HIGH" in output:
+                elif "OVERALL GUARDIAN RISK: HIGH" in output:
                     risk = "HIGH"
                     risk_color = ORANGE
 
-                elif "RISK LEVEL: NOTICE" in output:
+                elif "OVERALL GUARDIAN RISK: NOTICE" in output:
                     risk = "NOTICE"
                     risk_color = ORANGE
 
-                elif "RISK LEVEL: NORMAL" in output:
+                elif "OVERALL GUARDIAN RISK: NORMAL" in output:
                     risk = "NORMAL"
                     risk_color = GREEN
 
@@ -1843,6 +1857,22 @@ class SafeSpaceApp(ctk.CTk):
                 risk_value.configure(
                     text=risk,
                     text_color=risk_color
+                )
+
+                # GUARDIAN ASSESSMENT SCORE
+
+                score = "Not available"
+
+                for line in output.splitlines():
+
+                    if line.strip().startswith(
+                        "Guardian Assessment Score:"
+                    ):
+                        score = line.split(":", 1)[1].strip()
+                        break
+
+                guardian_score_label.configure(
+                    text="Assessment Score: " + score
                 )
 
                 # EXTRACT COUNTS

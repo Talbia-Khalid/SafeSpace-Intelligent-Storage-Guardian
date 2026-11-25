@@ -59,13 +59,6 @@ void emergency_mode(char path[])
         printf("System storage condition is healthy.\n");
     }
 
-    if (percentage < 70)
-    {
-        printf("\nEmergency assessment is not required.\n");
-        printf("\n========================================\n");
-        return;
-    }
-
     printf("\nSTARTING GUARDIAN ASSESSMENT...\n");
 
     /* CLEANUP ASSESSMENT */
@@ -77,12 +70,16 @@ void emergency_mode(char path[])
     get_cleanup_summary(path, &cleanup);
 
     printf("\nCleanup Findings:\n");
+
     printf("Empty files: %d\n", cleanup.empty_files);
     printf("Large files: %d\n", cleanup.large_files);
     printf("Temporary files: %d\n", cleanup.temporary_files);
 
     printf("Temporary space to review: %.2f MB\n",
            cleanup.temporary_file_bytes / (1024.0 * 1024));
+
+    printf("Inaccessible paths: %d\n",
+           cleanup.inaccessible_paths);
 
     /* DUPLICATE ASSESSMENT */
 
@@ -99,9 +96,59 @@ void emergency_mode(char path[])
     printf("Potential duplicate savings: %.2f MB\n",
            duplicate_savings / (1024.0 * 1024));
 
+    /* COMBINED GUARDIAN ASSESSMENT */
+
+    printf("\n[3] COMBINED GUARDIAN ASSESSMENT\n");
+
+    double guardian_score = percentage;
+
+    if (duplicate_pairs > 0)
+        guardian_score += 2;
+
+    if (cleanup.temporary_files > 0)
+        guardian_score += 2;
+
+    if (cleanup.empty_files > 0)
+        guardian_score += 2;
+
+    if (cleanup.large_files > 0)
+        guardian_score += 2;
+
+    if (cleanup.inaccessible_paths > 0)
+        guardian_score += 2;
+
+    if (guardian_score > 100)
+        guardian_score = 100;
+
+    printf("Guardian Assessment Score: %.2f / 100\n",
+           guardian_score);
+
+    printf("\nOVERALL GUARDIAN RISK: ");
+
+    if (guardian_score >= 95)
+    {
+        printf("CRITICAL\n");
+        printf("Immediate attention is required.\n");
+    }
+    else if (guardian_score >= 85)
+    {
+        printf("HIGH\n");
+        printf("Multiple storage concerns require attention.\n");
+    }
+    else if (guardian_score >= 70)
+    {
+        printf("NOTICE\n");
+        printf("Some storage concerns need review.\n");
+    }
+    else
+    {
+        printf("NORMAL\n");
+        printf("No significant storage risks detected.\n");
+    }
+
     /* GUARDIAN RECOMMENDATIONS */
 
-    printf("\n[3] INTELLIGENT GUARDIAN RECOMMENDATIONS\n");
+    printf("\n[4] INTELLIGENT GUARDIAN RECOMMENDATIONS\n");
 
     if (percentage >= 95)
     {
@@ -138,10 +185,17 @@ void emergency_mode(char path[])
         printf("Review their purpose before taking action.\n");
     }
 
+    if (cleanup.inaccessible_paths > 0)
+    {
+        printf("[NOTICE] Some paths could not be accessed.\n");
+        printf("Check their permissions before further analysis.\n");
+    }
+
     if (duplicate_pairs == 0 &&
         cleanup.temporary_files == 0 &&
         cleanup.empty_files == 0 &&
         cleanup.large_files == 0 &&
+        cleanup.inaccessible_paths == 0 &&
         percentage < 85)
     {
         printf("No significant cleanup concerns were detected.\n");
