@@ -7,6 +7,11 @@
 void check_storage();
 void analyze_directory(char path[]);
 void detect_duplicates(char path[]);
+void get_duplicate_summary(
+    char path[],
+    int *duplicate_pairs,
+    unsigned long long *saved_size
+);
 
 void save_storage_history(
     unsigned long long total,

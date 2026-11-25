@@ -18,7 +18,6 @@ struct FileData files[MAX_FILES];
 
 int file_total = 0;
 
-// Skip unnecessary directories
 int should_skip_directory(char name[])
 {
     if (strcmp(name, ".git") == 0 ||
@@ -33,7 +32,6 @@ int should_skip_directory(char name[])
     return 0;
 }
 
-// Calculate SHA-256 hash
 void calculate_hash(char path[], char hash[])
 {
     FILE *file;
@@ -100,7 +98,6 @@ void calculate_hash(char path[], char hash[])
     EVP_MD_CTX_free(context);
 }
 
-// Scan files recursively
 void scan_files(char path[])
 {
     DIR *dir;
@@ -145,7 +142,8 @@ void scan_files(char path[])
         }
         else if (S_ISREG(info.st_mode) && info.st_size > 0)
         {
-           if (file_total >= MAX_FILES) continue;
+            if (file_total >= MAX_FILES)
+                continue;
 
             snprintf(
                 files[file_total].path,
@@ -154,7 +152,8 @@ void scan_files(char path[])
                 full_path
             );
 
-            files[file_total].size = info.st_size;
+            files[file_total].size =
+                (unsigned long long)info.st_size;
 
             calculate_hash(
                 full_path,
@@ -171,7 +170,49 @@ void scan_files(char path[])
     closedir(dir);
 }
 
-// Detect duplicate files
+/* Calculate duplicate information for Emergency Mode */
+void get_duplicate_summary(
+    char path[],
+    int *duplicate_pairs,
+    unsigned long long *saved_size
+)
+{
+    file_total = 0;
+
+    *duplicate_pairs = 0;
+    *saved_size = 0;
+
+    scan_files(path);
+
+    for (int i = 0; i < file_total; i++)
+    {
+        int has_earlier_match = 0;
+
+        for (int j = 0; j < i; j++)
+        {
+            if (strcmp(files[i].hash, files[j].hash) == 0)
+            {
+                has_earlier_match = 1;
+                break;
+            }
+        }
+
+        for (int j = i + 1; j < file_total; j++)
+        {
+            if (strcmp(files[i].hash, files[j].hash) == 0)
+            {
+                (*duplicate_pairs)++;
+            }
+        }
+
+        if (has_earlier_match)
+        {
+            *saved_size += files[i].size;
+        }
+    }
+}
+
+/* Normal duplicate detector */
 void detect_duplicates(char path[])
 {
     file_total = 0;
@@ -186,9 +227,9 @@ void detect_duplicates(char path[])
 
     printf("\n===== DUPLICATE FILES =====\n");
 
-        for (int i = 0; i < file_total; i++)
-       {
-         int has_earlier_match = 0;
+    for (int i = 0; i < file_total; i++)
+    {
+        int has_earlier_match = 0;
 
         for (int j = 0; j < i; j++)
         {
