@@ -27,6 +27,22 @@ void quarantine_file(char path[]);
 void list_quarantined_files();
 void restore_file(int id);
 
+struct CleanupSummary
+{
+    int empty_files;
+    int large_files;
+    int temporary_files;
+    int inaccessible_paths;
+
+    unsigned long long large_file_bytes;
+    unsigned long long temporary_file_bytes;
+};
+
+void get_cleanup_summary(
+    char path[],
+    struct CleanupSummary *summary
+);
+
 void cleanup_recommendations(char path[]);
 
 void emergency_mode(char path[]);

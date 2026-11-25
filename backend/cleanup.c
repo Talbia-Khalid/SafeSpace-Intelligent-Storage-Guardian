@@ -7,17 +7,6 @@
 
 #define LARGE_FILE_SIZE (100LL * 1024 * 1024)
 
-struct CleanupSummary
-{
-    int empty_files;
-    int large_files;
-    int temporary_files;
-    int inaccessible_paths;
-
-    unsigned long long large_file_bytes;
-    unsigned long long temporary_file_bytes;
-};
-
 int should_ignore_directory(char name[])
 {
     const char *ignored[] = {
@@ -132,6 +121,16 @@ void scan_cleanup(char path[], struct CleanupSummary *summary)
     closedir(dir);
 }
 
+void get_cleanup_summary(
+    char path[],
+    struct CleanupSummary *summary
+)
+{
+    *summary = (struct CleanupSummary){0};
+
+    scan_cleanup(path, summary);
+}
+
 void cleanup_recommendations(char path[])
 {
     struct CleanupSummary summary = {0};
@@ -142,7 +141,7 @@ void cleanup_recommendations(char path[])
 
     printf("Ignored directories: venv, .git, __pycache__, node_modules and others.\n\n");
 
-    scan_cleanup(path, &summary);
+    get_cleanup_summary(path, &summary);
 
     printf("\n========== SCAN SUMMARY ==========\n");
 

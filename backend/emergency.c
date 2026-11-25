@@ -25,6 +25,8 @@ void emergency_mode(char path[])
     int duplicate_pairs = 0;
     unsigned long long duplicate_savings = 0;
 
+    struct CleanupSummary cleanup = {0};
+
     printf("\n========================================\n");
     printf("        SAFESPACE EMERGENCY MODE\n");
     printf("========================================\n");
@@ -57,56 +59,92 @@ void emergency_mode(char path[])
         printf("System storage condition is healthy.\n");
     }
 
-    printf("\n========================================\n");
-
-    if (percentage >= 70)
-    {
-        printf("\nSTARTING GUARDIAN ASSESSMENT...\n");
-
-        printf("\n[1] CLEANUP ANALYSIS\n");
-
-        cleanup_recommendations(path);
-
-        printf("\n[2] DUPLICATE ANALYSIS\n");
-
-        get_duplicate_summary(
-            path,
-            &duplicate_pairs,
-            &duplicate_savings
-        );
-
-        printf("Duplicate pairs found: %d\n", duplicate_pairs);
-
-        printf("Potential duplicate savings: %.2f MB\n",
-               duplicate_savings / (1024.0 * 1024));
-
-        printf("\n[3] GUARDIAN RECOMMENDATIONS\n");
-
-        if (duplicate_pairs > 0)
-        {
-            printf("[HIGH PRIORITY] Review duplicate files.\n");
-        }
-
-        printf("[REVIEW] Check temporary files before removing them.\n");
-
-        printf("[REVIEW] Inspect large files before taking action.\n");
-
-        if (percentage >= 95)
-        {
-            printf("[CRITICAL] Free up storage space as soon as possible.\n");
-        }
-        else if (percentage >= 85)
-        {
-            printf("[WARNING] Monitor storage and review cleanup options.\n");
-        }
-        else
-        {
-            printf("[NOTICE] Continue monitoring storage growth.\n");
-        }
-    }
-    else
+    if (percentage < 70)
     {
         printf("\nEmergency assessment is not required.\n");
+        printf("\n========================================\n");
+        return;
+    }
+
+    printf("\nSTARTING GUARDIAN ASSESSMENT...\n");
+
+    /* CLEANUP ASSESSMENT */
+
+    printf("\n[1] CLEANUP ANALYSIS\n");
+
+    printf("Scanning selected folder: %s\n", path);
+
+    get_cleanup_summary(path, &cleanup);
+
+    printf("\nCleanup Findings:\n");
+    printf("Empty files: %d\n", cleanup.empty_files);
+    printf("Large files: %d\n", cleanup.large_files);
+    printf("Temporary files: %d\n", cleanup.temporary_files);
+
+    printf("Temporary space to review: %.2f MB\n",
+           cleanup.temporary_file_bytes / (1024.0 * 1024));
+
+    /* DUPLICATE ASSESSMENT */
+
+    printf("\n[2] DUPLICATE ANALYSIS\n");
+
+    get_duplicate_summary(
+        path,
+        &duplicate_pairs,
+        &duplicate_savings
+    );
+
+    printf("Duplicate pairs found: %d\n", duplicate_pairs);
+
+    printf("Potential duplicate savings: %.2f MB\n",
+           duplicate_savings / (1024.0 * 1024));
+
+    /* GUARDIAN RECOMMENDATIONS */
+
+    printf("\n[3] INTELLIGENT GUARDIAN RECOMMENDATIONS\n");
+
+    if (percentage >= 95)
+    {
+        printf("[CRITICAL] System storage is almost full.\n");
+        printf("Review storage immediately.\n");
+    }
+    else if (percentage >= 85)
+    {
+        printf("[HIGH] Storage usage is very high.\n");
+        printf("Prioritize reviewing unnecessary files.\n");
+    }
+
+    if (duplicate_pairs > 0)
+    {
+        printf("[MEDIUM] Duplicate files detected.\n");
+        printf("Review duplicate files to identify possible savings.\n");
+    }
+
+    if (cleanup.temporary_files > 0)
+    {
+        printf("[MEDIUM] Temporary files detected.\n");
+        printf("Review them before removing anything.\n");
+    }
+
+    if (cleanup.empty_files > 0)
+    {
+        printf("[LOW] Empty files detected.\n");
+        printf("Check whether these files are still needed.\n");
+    }
+
+    if (cleanup.large_files > 0)
+    {
+        printf("[LOW] Large files detected.\n");
+        printf("Review their purpose before taking action.\n");
+    }
+
+    if (duplicate_pairs == 0 &&
+        cleanup.temporary_files == 0 &&
+        cleanup.empty_files == 0 &&
+        cleanup.large_files == 0 &&
+        percentage < 85)
+    {
+        printf("No significant cleanup concerns were detected.\n");
     }
 
     printf("\n========================================\n");
