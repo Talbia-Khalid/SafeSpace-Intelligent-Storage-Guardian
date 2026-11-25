@@ -1551,7 +1551,6 @@ class SafeSpaceApp(ctk.CTk):
             command=lambda: self.open_page("Dashboard")
         ).pack(pady=(10, 25))
 
-
     def show_emergency_mode(self):
 
         self.clear_content()
@@ -1566,64 +1565,180 @@ class SafeSpaceApp(ctk.CTk):
 
         panel.pack(fill="both", expand=True, padx=5, pady=10)
 
+        # HEADER
         ctk.CTkLabel(
             panel,
             text="CRITICAL SYSTEM PROTECTION",
             font=FONT_TECH,
             text_color=RED
-        ).pack(pady=(30, 8))
+        ).pack(pady=(20, 5))
 
         ctk.CTkLabel(
             panel,
             text="Emergency Mode",
             font=(FONT, 27, "bold"),
             text_color=TEXT
-        ).pack(pady=8)
+        ).pack(pady=5)
 
         ctk.CTkLabel(
             panel,
-            text="Check storage conditions and identify files that need attention.",
+            text="Intelligent storage assessment and file protection.",
             font=FONT_BODY,
             text_color=MUTED
         ).pack(pady=5)
 
+        # SELECTED FOLDER
         folder_label = ctk.CTkLabel(
             panel,
             text="No folder selected",
             font=FONT_TECH,
             text_color=MUTED,
-            wraplength=650
+            wraplength=700
         )
 
-        folder_label.pack(pady=12)
+        folder_label.pack(pady=10)
+
+        # STORAGE RISK CARD
+        risk_card = ctk.CTkFrame(
+            panel,
+            fg_color="#281D28",
+            corner_radius=15,
+            border_width=1,
+            border_color="#59323D"
+        )
+
+        risk_card.pack(fill="x", padx=30, pady=8)
+
+        ctk.CTkLabel(
+            risk_card,
+            text="SYSTEM STORAGE RISK",
+            font=FONT_TECH,
+            text_color=MUTED
+        ).pack(pady=(12, 3))
+
+        risk_value = ctk.CTkLabel(
+            risk_card,
+            text="NOT ASSESSED",
+            font=(FONT, 22, "bold"),
+            text_color=RED
+        )
+
+        risk_value.pack(pady=(3, 12))
+
+        # FINDINGS CARDS
+        findings_frame = ctk.CTkFrame(
+            panel,
+            fg_color="transparent"
+        )
+
+        findings_frame.pack(fill="x", padx=25, pady=8)
+
+        findings_frame.grid_columnconfigure(
+            (0, 1, 2), weight=1
+        )
+
+        def create_finding_card(title, color, column):
+
+            card = ctk.CTkFrame(
+                findings_frame,
+                fg_color=CARD_ALT,
+                corner_radius=14,
+                border_width=1,
+                border_color=BORDER
+            )
+
+            card.grid(
+                row=0,
+                column=column,
+                padx=5,
+                pady=5,
+                sticky="ew"
+            )
+
+            ctk.CTkLabel(
+                card,
+                text=title,
+                font=(FONT, 11, "bold"),
+                text_color=MUTED
+            ).pack(pady=(12, 5))
+
+            value = ctk.CTkLabel(
+                card,
+                text="0",
+                font=(FONT, 23, "bold"),
+                text_color=color
+            )
+
+            value.pack(pady=(3, 12))
+
+            return value
+
+        empty_value = create_finding_card(
+            "EMPTY FILES", ORANGE, 0
+        )
+
+        temporary_value = create_finding_card(
+            "TEMPORARY FILES", ORANGE, 1
+        )
+
+        duplicate_value = create_finding_card(
+            "DUPLICATE PAIRS", PURPLE, 2
+        )
+
+        # ADDITIONAL INFORMATION
+        info_label = ctk.CTkLabel(
+            panel,
+            text="Potential duplicate savings: Not available",
+            font=FONT_TECH,
+            text_color=CYAN
+        )
+
+        info_label.pack(pady=5)
+
+        # RECOMMENDATIONS
+        ctk.CTkLabel(
+            panel,
+            text="GUARDIAN RECOMMENDATIONS",
+            font=FONT_TECH,
+            text_color=RED
+        ).pack(pady=(8, 5))
 
         result_box = ctk.CTkTextbox(
             panel,
-            width=700,
-            height=250,
-            corner_radius=16,
+            height=175,
+            corner_radius=14,
             fg_color=BG,
-            text_color=RED,
-            font=(MONO, 12),
+            text_color=TEXT,
+            font=(MONO, 11),
             border_width=1,
             border_color=BORDER
         )
 
-        result_box.pack(fill="x", padx=35, pady=20)
+        result_box.pack(
+            fill="both",
+            expand=True,
+            padx=30,
+            pady=8
+        )
 
         result_box.insert(
             "1.0",
-            "Select a folder to begin Emergency Mode scanning."
+            "Select a folder and run the Guardian assessment."
         )
 
         result_box.configure(state="disabled")
 
         selected_folder = {"path": ""}
 
-        # --------------------------------------------------
-        # SELECT FOLDER
-        # --------------------------------------------------
+        # UPDATE RESULT DISPLAY
+        def show_message(message):
 
+            result_box.configure(state="normal")
+            result_box.delete("1.0", "end")
+            result_box.insert("1.0", message)
+            result_box.configure(state="disabled")
+
+        # SELECT FOLDER
         def select_folder():
 
             folder_path = filedialog.askdirectory(
@@ -1639,46 +1754,41 @@ class SafeSpaceApp(ctk.CTk):
                     text_color=RED
                 )
 
-                result_box.configure(state="normal")
-                result_box.delete("1.0", "end")
-
-                result_box.insert(
-                    "1.0",
-                    "Folder selected successfully.\n"
-                    "Click RUN EMERGENCY SCAN to continue."
+                risk_value.configure(
+                    text="NOT ASSESSED"
                 )
 
-                result_box.configure(state="disabled")
+                empty_value.configure(text="0")
+                temporary_value.configure(text="0")
+                duplicate_value.configure(text="0")
 
-        # --------------------------------------------------
-        # RUN EMERGENCY SCAN
-        # --------------------------------------------------
+                info_label.configure(
+                    text="Potential duplicate savings: Not available"
+                )
 
+                show_message(
+                    "Folder selected successfully.\n\n"
+                    "Click RUN EMERGENCY SCAN to start assessment."
+                )
+
+        # RUN SCAN
         def run_emergency_scan():
 
             folder_path = selected_folder["path"]
 
             if not folder_path:
 
-                result_box.configure(state="normal")
-                result_box.delete("1.0", "end")
-                result_box.insert(
-                    "1.0",
-                    "Please select a folder first."
+                show_message(
+                    "Please select a folder before starting the scan."
                 )
-                result_box.configure(state="disabled")
                 return
 
-            result_box.configure(state="normal")
-            result_box.delete("1.0", "end")
-
-            result_box.insert(
-                "1.0",
+            show_message(
                 "Checking system storage...\n"
-                "Scanning for emergency recommendations...\n"
+                "Analyzing cleanup findings...\n"
+                "Checking duplicate files...\n"
+                "Generating Guardian recommendations..."
             )
-
-            result_box.configure(state="disabled")
 
             project_path = os.path.dirname(
                 os.path.dirname(os.path.abspath(__file__))
@@ -1698,106 +1808,178 @@ class SafeSpaceApp(ctk.CTk):
                     timeout=30
                 )
 
-                result_box.configure(state="normal")
-                result_box.delete("1.0", "end")
+                if result.returncode != 0:
 
-                if result.returncode == 0:
-
-                    result_box.insert(
-                        "1.0",
-                        result.stdout
-                    )
-
-                    if result.stderr:
-
-                        result_box.insert(
-                            "end",
-                            "\nWarnings:\n" + result.stderr
-                        )
-
-                else:
-
-                    result_box.insert(
-                        "1.0",
+                    show_message(
                         "Emergency scan failed.\n\n"
                         + result.stderr
                         + result.stdout
                     )
+                    return
 
-                result_box.configure(state="disabled")
+                output = result.stdout
+
+                # STORAGE RISK
+                if "RISK LEVEL: CRITICAL" in output:
+                    risk = "CRITICAL"
+                    risk_color = RED
+
+                elif "RISK LEVEL: HIGH" in output:
+                    risk = "HIGH"
+                    risk_color = ORANGE
+
+                elif "RISK LEVEL: NOTICE" in output:
+                    risk = "NOTICE"
+                    risk_color = ORANGE
+
+                elif "RISK LEVEL: NORMAL" in output:
+                    risk = "NORMAL"
+                    risk_color = GREEN
+
+                else:
+                    risk = "UNKNOWN"
+                    risk_color = MUTED
+
+                risk_value.configure(
+                    text=risk,
+                    text_color=risk_color
+                )
+
+                # EXTRACT COUNTS
+                def extract_number(label):
+
+                    for line in output.splitlines():
+
+                        if line.strip().startswith(label):
+
+                            try:
+                                return line.split(":", 1)[1].strip()
+                            except IndexError:
+                                return "0"
+
+                    return "0"
+
+                empty_value.configure(
+                    text=extract_number("Empty files")
+                )
+
+                temporary_value.configure(
+                    text=extract_number("Temporary files")
+                )
+
+                duplicate_value.configure(
+                    text=extract_number("Duplicate pairs found")
+                )
+
+                savings = extract_number(
+                    "Potential duplicate savings"
+                )
+
+                info_label.configure(
+                    text="Potential duplicate savings: " + savings
+                )
+
+                # SHOW RECOMMENDATIONS
+                recommendation_start = output.find(
+                    "[3] INTELLIGENT GUARDIAN RECOMMENDATIONS"
+                )
+
+                recommendation_end = output.find(
+                    "GUARDIAN ASSESSMENT COMPLETE"
+                )
+
+                if recommendation_start != -1:
+
+                    if recommendation_end != -1:
+
+                        recommendations = output[
+                            recommendation_start:recommendation_end
+                        ]
+
+                    else:
+
+                        recommendations = output[
+                            recommendation_start:
+                        ]
+
+                else:
+
+                    recommendations = output
+
+                show_message(
+                    "GUARDIAN ASSESSMENT RESULTS\n"
+                    "====================================\n\n"
+                    + recommendations
+                    + "\n====================================\n"
+                    "No files have been automatically deleted."
+                )
+
+                if result.stderr:
+
+                    result_box.configure(state="normal")
+                    result_box.insert(
+                        "end",
+                        "\nWarnings:\n" + result.stderr
+                    )
+                    result_box.configure(state="disabled")
 
             except subprocess.TimeoutExpired:
 
-                result_box.configure(state="normal")
-                result_box.delete("1.0", "end")
-
-                result_box.insert(
-                    "1.0",
+                show_message(
                     "Error: Emergency scan took too long."
                 )
 
-                result_box.configure(state="disabled")
-
             except Exception as error:
 
-                result_box.configure(state="normal")
-                result_box.delete("1.0", "end")
-
-                result_box.insert(
-                    "1.0",
+                show_message(
                     f"Error: {error}"
                 )
 
-                result_box.configure(state="disabled")
-
-        # --------------------------------------------------
         # BUTTONS
-        # --------------------------------------------------
-
         ctk.CTkButton(
             panel,
             text="SELECT FOLDER",
-            height=43,
-            corner_radius=14,
+            height=42,
+            corner_radius=13,
             fg_color="#422832",
             hover_color="#59323D",
             text_color="#FFFFFF",
             font=(FONT, 12, "bold"),
             command=select_folder
-        ).pack(pady=6)
+        ).pack(pady=5)
 
         ctk.CTkButton(
             panel,
-            text="RUN EMERGENCY SCAN",
-            height=48,
-            width=230,
+            text="RUN GUARDIAN ASSESSMENT",
+            height=46,
+            width=250,
             corner_radius=14,
             fg_color=RED,
             hover_color="#D94D61",
             text_color="#FFFFFF",
             font=(FONT, 13, "bold"),
             command=run_emergency_scan
-        ).pack(pady=12)
+        ).pack(pady=8)
 
         ctk.CTkLabel(
             panel,
-            text="SafeSpace provides recommendations only. No files are automatically deleted.",
+            text="SafeSpace recommends actions but never deletes files automatically.",
             font=(FONT, 11),
             text_color=MUTED,
             wraplength=650
-        ).pack(pady=8)
+        ).pack(pady=5)
 
         ctk.CTkButton(
             panel,
             text="←  BACK TO DASHBOARD",
-            height=42,
+            height=40,
             corner_radius=14,
             fg_color=CARD_ALT,
             hover_color=BORDER,
             text_color=TEXT,
             font=(FONT, 12, "bold"),
             command=lambda: self.open_page("Dashboard")
-        ).pack(pady=(10, 20))
+        ).pack(pady=(5, 15))
 
 
     # ==========================================================
