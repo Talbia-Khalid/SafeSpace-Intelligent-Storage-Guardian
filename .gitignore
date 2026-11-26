@@ -31,3 +31,18 @@ reports/*
 *.tmp
 *.bak
 
+# Vim temporary files
+*.swp
+*.swo
+
+# Root compiled executable
+/safespace
+
+# Activity Monitor test files
+/tests/activity_test.txt
+/tests/gui_activity_test.txt
+/tests/guardian_test/
+
+# Runtime recovery vault data
+/vault/*
+!/vault/.gitkeep
